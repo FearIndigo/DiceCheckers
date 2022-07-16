@@ -89,7 +89,7 @@ public class InputManager : MonoBehaviour
                 var actions = PlayerManager.Instance.GetActions(board, _selected);
                 
                 // Check if we should change selected player
-                if (boardValue != 0 && PlayerManager.Instance.IsPlayersTurn(board, pos) && actions.Count != 0)
+                if (boardValue != 0 && PlayerManager.Instance.IsPlayersTurn(board, pos) && PlayerManager.Instance.GetActions(board, pos).Count != 0)
                 {
                     // Update selected player
                     UpdateSelected(pos);
