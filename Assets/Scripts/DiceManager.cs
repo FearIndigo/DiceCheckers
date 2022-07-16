@@ -128,6 +128,13 @@ public class DiceManager : MonoBehaviour
     public void UpdateMove()
     {
         var board = BoardManager.Instance.Board;
+        
+        // Exit if terminal board
+        if (BoardManager.Instance.Terminal(board))
+        {
+            return;
+        }
+        
         var index = 0;
         var validMoves = new bool[2];
         while (!validMoves[0] || !validMoves[1])
