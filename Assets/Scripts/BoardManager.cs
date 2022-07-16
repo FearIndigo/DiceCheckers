@@ -83,7 +83,7 @@ public class BoardManager : MonoBehaviour
         }
         
         // Move player on board
-        _board = Result(_board, action);
+        _board = Result(_board, action, PlayerManager.Instance.PlayerATurn ? 0 : 1);
 
         // Update board visuals
         UpdatePlayerTiles();
@@ -97,7 +97,7 @@ public class BoardManager : MonoBehaviour
         return true;
     }
 
-    public Dictionary<Vector3Int, int> Result(Dictionary<Vector3Int, int> board, PlayerManager.Action action)
+    public Dictionary<Vector3Int, int> Result(Dictionary<Vector3Int, int> board, PlayerManager.Action action, int owner)
     {
         // Test From has value that is a player, and To is a valid position that isn't a player on the same team
         if (!board.TryGetValue(action.From, out int from) || from == 0 || !board.TryGetValue(action.To, out int to) || from == to)
@@ -107,7 +107,7 @@ public class BoardManager : MonoBehaviour
         }
         
         // Check it is this players turn
-        if (!PlayerManager.Instance.IsPlayersTurn(board, action.From))
+        if (PlayerManager.Instance.GetOwner(board, action.From) != owner)
         {
             Debug.LogError("Can only perform action on own player.");
             return board;

@@ -99,10 +99,11 @@ public class InputManager : MonoBehaviour
                 // Get action
                 var action = new PlayerManager.Action(_selected, pos);
 
-                // Check action is part of available actions
+                // Unselect player if action is not part of available actions
                 if (!actions.Contains(action))
                 {
-                    Debug.LogWarning("Cannot perform action: " + action);
+                    // Unselect player
+                    UpdateSelected(_unselectedVal);
                     return;
                 }
                 
