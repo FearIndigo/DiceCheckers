@@ -34,6 +34,14 @@ public class DiceManager : MonoBehaviour
             Destroy(gameObject);
         }
     }
+    
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
+    }
 
     public void Reset()
     {
@@ -46,9 +54,9 @@ public class DiceManager : MonoBehaviour
 
     void SetupAllMoves()
     {
-        _allMoves = new List<Vector3Int>[6];
+        _allMoves = new List<Vector3Int>[7];
         
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < _allMoves.Length; i++)
         {
             var moves = new List<Vector3Int>();
             switch (i)
@@ -81,6 +89,16 @@ public class DiceManager : MonoBehaviour
                     moves.Add(new Vector3Int(1, 1));
                     moves.Add(new Vector3Int(-1, -1));
                     break;
+                case 6:
+                    moves.Add(new Vector3Int(-1, 2));
+                    moves.Add(new Vector3Int(-1, -2));
+                    moves.Add(new Vector3Int(-2, 1));
+                    moves.Add(new Vector3Int(-2, -1));
+                    moves.Add(new Vector3Int(1, 2));
+                    moves.Add(new Vector3Int(1, -2));
+                    moves.Add(new Vector3Int(2, 1));
+                    moves.Add(new Vector3Int(2, -1));
+                    break;
             }
             
             // Add moves to all moves
@@ -97,6 +115,14 @@ public class DiceManager : MonoBehaviour
         SuperMove.Add(new Vector3Int(1, -1));
         SuperMove.Add(new Vector3Int(1, 1));
         SuperMove.Add(new Vector3Int(-1, -1));
+        SuperMove.Add(new Vector3Int(-1, 2));
+        SuperMove.Add(new Vector3Int(-1, -2));
+        SuperMove.Add(new Vector3Int(-2, 1));
+        SuperMove.Add(new Vector3Int(-2, -1));
+        SuperMove.Add(new Vector3Int(1, 2));
+        SuperMove.Add(new Vector3Int(1, -2));
+        SuperMove.Add(new Vector3Int(2, 1));
+        SuperMove.Add(new Vector3Int(2, -1));
     }
     
     public void UpdateMove()
@@ -104,7 +130,7 @@ public class DiceManager : MonoBehaviour
         var board = BoardManager.Instance.Board;
         var index = 0;
         var validMoves = new bool[2];
-        while (!validMoves[0] && !validMoves[1])
+        while (!validMoves[0] || !validMoves[1])
         {
             validMoves[0] = false;
             validMoves[1] = false;

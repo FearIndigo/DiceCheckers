@@ -29,6 +29,14 @@ public class InputManager : MonoBehaviour
 
         _mainCam = Camera.main;
     }
+    
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
+    }
 
     public void Reset()
     {

@@ -5,14 +5,12 @@ using System.ComponentModel.Design.Serialization;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.Tilemaps;
 
-public class GameManager : MonoBehaviour
+public class SceneManagerManager : MonoBehaviour
 {
-    public static GameManager Instance;
-
-    [SerializeField] private TextMeshProUGUI _winnerText;
-    private string[] _playerNames;
+    public static SceneManagerManager Instance;
 
     // Start is called before the first frame update
     void Start()
@@ -25,9 +23,6 @@ public class GameManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
-        
-        // Reset game
-        Reset();
     }
 
     private void OnDestroy()
@@ -38,18 +33,13 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void Reset()
+    public void LoadGame()
     {
-        _playerNames = new string[] {"Player A", "Player B"};
-        _winnerText.text = "";
-        BoardManager.Instance.Reset();
-        PlayerManager.Instance.Reset();
-        DiceManager.Instance.Reset();
-        InputManager.Instance.Reset();
+        SceneManager.LoadScene("Game");
     }
-
-    public void GameWinner(int owner)
+    
+    public void LoadMainMenu()
     {
-        _winnerText.text = _playerNames[owner] + " Wins!";
+        SceneManager.LoadScene("MainMenu");
     }
 }
