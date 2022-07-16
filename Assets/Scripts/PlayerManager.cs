@@ -62,16 +62,11 @@ public class PlayerManager : MonoBehaviour
 
     public void ChangePlayerTurn()
     {
-        // Get new move if changing back to player A
-        //if (!_playerATurn)
-        //{
-            DiceManager.Instance.UpdateMove();
-        //}
-        
+        // Change available moveset
+        DiceManager.Instance.UpdateMove();
+
         // Swap the active player
         _playerATurn = !_playerATurn;
-        
-        Debug.Log("It is player " + (_playerATurn ? "A's" : "B's") + " turn.");
     }
 
     public List<Vector3Int> GetPlayerPositions(Dictionary<Vector3Int, int> board, int owner)
