@@ -54,17 +54,46 @@ public class QValueSO : ScriptableObject
     public PlayerManager.Action ChooseAction(Dictionary<Vector3Int, int> state, bool epsilon = true)
     {
         // Sort actions for player based on highest q value
-        var sortedActions = PlayerManager.Instance.GetAllPlayerAActions(state).OrderByDescending(action => GetQValue(state, action)).ToList();
+        var (highestQ, sortedActions) = SortPlayerAActions(state);
 
         // If epsilon is true and given random probability
         if (epsilon && Random.value < _epsilon)
         {
+            // Get actions for random q value
+            var randomQActions = sortedActions.ElementAt(Random.Range(0, sortedActions.Count)).Value;
             // Pick random action
-            return sortedActions[Random.Range(0, sortedActions.Count)];
+            return randomQActions[Random.Range(0, randomQActions.Count)];
         }
         
-        // Return action with highest q value
-        return sortedActions[0];
+        // Return random action with highest q value
+        return sortedActions[highestQ][Random.Range(0, sortedActions[highestQ].Count)];
+    }
+
+    (float, Dictionary<float, List<PlayerManager.Action>>) SortPlayerAActions(Dictionary<Vector3Int, int> state)
+    {
+        var allActions = PlayerManager.Instance.GetAllPlayerAActions(state);
+        var sortedActions = new Dictionary<float, List<PlayerManager.Action>>();
+        var highestQ = -1f;
+        // Loop actions
+        foreach (var action in allActions)
+        {
+            var qValue = GetQValue(state, action);
+            if (sortedActions.ContainsKey(qValue))
+            {
+                sortedActions[qValue].Add(action);
+            }
+            else
+            {
+                sortedActions[qValue] = new List<PlayerManager.Action> {action};
+            }
+            
+            if (qValue > highestQ)
+            {
+                highestQ = qValue;
+            }
+        }
+        
+        return (highestQ, sortedActions);
     }
 
     public void UpdateModel(Dictionary<Vector3Int, int> oldState, PlayerManager.Action action, Dictionary<Vector3Int, int> newState, float reward)

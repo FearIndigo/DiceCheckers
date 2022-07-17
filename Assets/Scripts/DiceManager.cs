@@ -115,14 +115,6 @@ public class DiceManager : MonoBehaviour
         SuperMove.Add(new Vector3Int(1, -1));
         SuperMove.Add(new Vector3Int(1, 1));
         SuperMove.Add(new Vector3Int(-1, -1));
-        SuperMove.Add(new Vector3Int(-1, 2));
-        SuperMove.Add(new Vector3Int(-1, -2));
-        SuperMove.Add(new Vector3Int(-2, 1));
-        SuperMove.Add(new Vector3Int(-2, -1));
-        SuperMove.Add(new Vector3Int(1, 2));
-        SuperMove.Add(new Vector3Int(1, -2));
-        SuperMove.Add(new Vector3Int(2, 1));
-        SuperMove.Add(new Vector3Int(2, -1));
     }
     
     public void UpdateMove()

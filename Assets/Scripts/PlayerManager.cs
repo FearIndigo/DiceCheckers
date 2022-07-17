@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Design.Serialization;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.PlayerLoop;
 using UnityEngine.Tilemaps;
@@ -133,7 +134,7 @@ public class PlayerManager : MonoBehaviour
             return actions;
         }
 
-        var currentMove = player > 2 ? DiceManager.Instance.SuperMove : DiceManager.Instance.CurrentMove;
+        var currentMove = player > 2 ? DiceManager.Instance.SuperMove.Union(DiceManager.Instance.CurrentMove).ToList() : DiceManager.Instance.CurrentMove;
 
         // Loop all possible moves
         foreach (var move in currentMove)

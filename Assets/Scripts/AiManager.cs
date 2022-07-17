@@ -12,6 +12,9 @@ public class AiManager : MonoBehaviour
     [SerializeField] private int _numTraining;
     [SerializeField] private DictionaryIntInt _normalisationMap;
     private Dictionary<bool, (Dictionary<Vector3Int, int>, PlayerManager.Action)> last;
+    [SerializeField] private float _killReward;
+    [SerializeField] private float _winReward;
+    [SerializeField] private float _loseReward;
 
     // Start is called before the first frame update
     void Start()
@@ -37,6 +40,10 @@ public class AiManager : MonoBehaviour
                 [true] = new (null, new PlayerManager.Action()),
                 [false] = new (null, new PlayerManager.Action())
             };
+        }
+        else
+        {
+            Debug.Log("Using Q Model with " + _qValueSO.GetCount() + " Weightings");
         }
     }
 
@@ -129,17 +136,19 @@ public class AiManager : MonoBehaviour
                 if (BoardManager.Instance.Terminal(newState))
                 {
                     // Update model for winning player
-                    _qValueSO.UpdateModel(state, action, newState, 1f);
+                    _qValueSO.UpdateModel(state, action, newState, _winReward);
                     // Update model for losing player
-                    _qValueSO.UpdateModel(previous.Item1, previous.Item2, newState, -1f);
+                    _qValueSO.UpdateModel(previous.Item1, previous.Item2, newState, _loseReward);
 
                     // End training round
                     EndTrainingRound();
                 }
                 else if (previous.Item1 != null)
                 {
-                    // Update model when continuing play
-                    _qValueSO.UpdateModel(previous.Item1, previous.Item2, newState, 0);
+                    var prevNumOpponents = PlayerManager.Instance.GetPlayerPositions(state, 1).Count;
+                    var newNumOpponents = PlayerManager.Instance.GetPlayerPositions(newState, 1).Count;
+                    // Update model when continuing play, small reward for killing opponents
+                    _qValueSO.UpdateModel(previous.Item1, previous.Item2, newState, newNumOpponents < prevNumOpponents ? _killReward : 0);
                 }
             }
         }
