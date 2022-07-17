@@ -46,7 +46,7 @@ public class QValueSO : ScriptableObject
     }
 
     [System.Serializable]
-    public struct PlayersAction
+    public struct PlayersAction : IEquatable<PlayersAction>
     {
         public PlayersAction(List<int> players, PlayerManager.Action action)
         {
@@ -55,6 +55,28 @@ public class QValueSO : ScriptableObject
         }
         public List<int> Players;
         public PlayerManager.Action Action;
+
+
+        public bool Equals(PlayersAction other)
+        {
+            return this.GetHashCode() == other.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is PlayersAction other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            int res = 0x2D2816FE;
+            foreach(var item in Players)
+            {
+                res = res * 31 + item.GetHashCode();
+            }
+            res = res * 31 + Action.GetHashCode();
+            return res;
+        }
     }
 
     [System.Serializable]
@@ -97,7 +119,7 @@ public class QValueSO : ScriptableObject
             Debug.Log("Loading Brain...");
             foreach (var keyVal in _sq)
             {
-                _q.Add(keyVal.PlayersAction, keyVal.Q);
+                _q[keyVal.PlayersAction] = keyVal.Q;
             }
             Debug.Log("Loaded brain weights: " + GetCount());
         }
@@ -105,6 +127,15 @@ public class QValueSO : ScriptableObject
         {
             Debug.Log("New Brain");
         }
+        
+        //DEBUG
+        //var test1 = new PlayersAction(new List<int> {1, 2, 3},
+        //    new PlayerManager.Action(new Vector3Int(0, 0, 0), new Vector3Int(0, 1, 0)));
+        //var test2 = new PlayersAction(new List<int> {1, 2, 3},
+        //    new PlayerManager.Action(new Vector3Int(0, 0, 0), new Vector3Int(0, 1, 0)));
+        //_q[test1] = 1f;
+        //if(_q.ContainsKey(test2)) Debug.Log("Found Key, Its working!");
+        //if(test1.Equals(test2)) Debug.Log("Equals is working!");
     }
 
     public int GetCount()
@@ -160,7 +191,7 @@ public class QValueSO : ScriptableObject
             return randomQActions[Random.Range(0, randomQActions.Count)];
         }
         
-        Debug.Log(highestQ);
+        if(highestQ != 0) Debug.Log(highestQ);
         
         // Return random action with highest q value
         return sortedActions[highestQ][Random.Range(0, sortedActions[highestQ].Count)];
@@ -175,6 +206,7 @@ public class QValueSO : ScriptableObject
         foreach (var action in allActions)
         {
             var qValue = GetQValue(state, action);
+            if(qValue != 0) Debug.Log(qValue);
             if (sortedActions.ContainsKey(qValue))
             {
                 sortedActions[qValue].Add(action);

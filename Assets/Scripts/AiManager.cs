@@ -21,7 +21,6 @@ public class AiManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        _numTrainingRemaining = _numTraining;
         if (Instance == null)
         {
             Instance = this;
@@ -66,6 +65,7 @@ public class AiManager : MonoBehaviour
     public void SetTrainingEnabled(bool training)
     {
         _training = training;
+        _numTrainingRemaining = _numTraining;
     }
 
     void EndTrainingRound()

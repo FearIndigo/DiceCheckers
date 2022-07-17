@@ -11,7 +11,7 @@ using UnityEngine.Tilemaps;
 public class PlayerManager : MonoBehaviour
 {
     [System.Serializable]
-    public struct Action
+    public struct Action : IEquatable<Action>
     {
         public Action(Vector3Int from, Vector3Int to)
         {
@@ -20,6 +20,24 @@ public class PlayerManager : MonoBehaviour
         }
         public Vector3Int From;
         public Vector3Int To;
+
+        public bool Equals(Action other)
+        {
+            return From.Equals(other.From) && To.Equals(other.To);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is Action other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            int res = 0x2D2816FE;
+            res = res * 31 + From.GetHashCode();
+            res = res * 31 + To.GetHashCode();
+            return res;
+        }
     }
     
     public static PlayerManager Instance;
