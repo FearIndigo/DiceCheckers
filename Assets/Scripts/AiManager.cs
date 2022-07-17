@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
 public class AiManager : MonoBehaviour
@@ -8,10 +9,13 @@ public class AiManager : MonoBehaviour
     public static AiManager Instance;
 
     [SerializeField] private QValueSO _qValueSO;
+    [SerializeField] private string _brainFilename;
+    private string path;
+    private string persistentPath;
     [SerializeField] private bool _training;
     [SerializeField] private int _numTraining;
     [SerializeField] private DictionaryIntInt _normalisationMap;
-    private Dictionary<bool, (Dictionary<Vector3Int, int>, PlayerManager.Action)> last;
+    private Dictionary<bool, (StateDict, PlayerManager.Action)> last;
     [SerializeField] private float _killReward;
     [SerializeField] private float _playerLostReward;
     [SerializeField] private float _winReward;
@@ -24,6 +28,8 @@ public class AiManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            SetPaths();
+            _qValueSO.LoadBrain(path);
         }
         else if (Instance != this)
         {
@@ -31,18 +37,33 @@ public class AiManager : MonoBehaviour
         }
     }
 
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            _qValueSO.SaveBrain(path);
+        }
+    }
+
+    void SetPaths()
+    {
+        path = Application.dataPath + Path.AltDirectorySeparatorChar + _brainFilename;
+        persistentPath = Application.persistentDataPath + Path.AltDirectorySeparatorChar + _brainFilename;
+    }
+
     public void Reset()
     {
+        last = new Dictionary<bool, (StateDict, PlayerManager.Action)>
+        {
+            [true] = new (null, new PlayerManager.Action()),
+            [false] = new (null, new PlayerManager.Action())
+        };
+        
         if (PlayerManager.Instance.HasAI)
         {
             if (_training)
             {
                 Debug.Log("Training Rounds Remaining: " + _numTraining);
-                last = new Dictionary<bool, (Dictionary<Vector3Int, int>, PlayerManager.Action)>
-                {
-                    [true] = new (null, new PlayerManager.Action()),
-                    [false] = new (null, new PlayerManager.Action())
-                };
             }
             else
             {
@@ -62,9 +83,9 @@ public class AiManager : MonoBehaviour
         {
             if (_numTraining == 0)
             {
+                _qValueSO.SaveBrain(path);
+                
                 Debug.Log("Training Complete. QValue Count: " + _qValueSO.GetCount());
-                
-                
             }
             else
             {
@@ -75,13 +96,13 @@ public class AiManager : MonoBehaviour
         }
     }
 
-    public Dictionary<Vector3Int, int> NormalisedState(Dictionary<Vector3Int, int> board)
+    public StateDict NormalisedState(StateDict board)
     {
         // If player A turn, already normalised
         if (PlayerManager.Instance.PlayerATurn) return board;
         
         // Copy board
-        var state = new Dictionary<Vector3Int, int>();
+        var state = new StateDict();
         
         // Loop over all state pieces
         foreach (var keyVal in board)
@@ -117,7 +138,7 @@ public class AiManager : MonoBehaviour
         return normAction;
     }
 
-    public bool InferAction(Dictionary<Vector3Int, int> board)
+    public bool InferAction(StateDict board)
     {
         var state = NormalisedState(board);
         var normAction = _qValueSO.ChooseAction(state, _training);

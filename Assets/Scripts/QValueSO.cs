@@ -1,34 +1,78 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using Unity.VisualScripting.FullSerializer;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
+using Random = UnityEngine.Random;
 
 [CreateAssetMenu(menuName = "Ai", fileName = "QValue")]
 public class QValueSO : ScriptableObject
 {
-    private Dictionary<(Dictionary<Vector3Int, int>, PlayerManager.Action), float> q;
+    private QValueDict q;
     [SerializeField] private float _alpha;
     [SerializeField] private float _epsilon;
-    
+
+    public void SaveBrain(string path)
+    {
+        Debug.Log("Saving brain at " + path);
+
+        var json = JsonUtility.ToJson(q);
+        using StreamWriter writer = new StreamWriter(path);
+        writer.Write(json);
+        Debug.Log("Saved brain weights: " + GetCount());
+    }
+
+    public void LoadBrain(string path)
+    {
+        if (File.Exists(path))
+        {
+            Debug.Log("Loading brain from " + path);
+            using StreamReader reader = new StreamReader(path);
+            var json = reader.ReadToEnd();
+            q = JsonUtility.FromJson<QValueDict>(json);
+            Debug.Log("Loaded brain weights: " + GetCount());
+        }
+        else
+        {
+            Debug.Log("New brain");
+            q = new QValueDict();
+        }
+    }
+
     public int GetCount()
     {
         return q.Count;
     }
     
-    public float GetQValue(Dictionary<Vector3Int, int> state, PlayerManager.Action action)
+    public float GetQValue(StateDict state, PlayerManager.Action action)
     {
-        // Initialise if not done already
-        q ??= new Dictionary<(Dictionary<Vector3Int, int>, PlayerManager.Action), float>();
+        var key = new StateActionDict {[state] = action};
+        if (q.ContainsKey(key))
+        {
+            return q[key];
+        }
         
-        return q.GetValueOrDefault((state, action), 0);
+        return 0;
     }
     
-    public void UpdateQValue(Dictionary<Vector3Int, int> state, PlayerManager.Action action, float oldQ, float reward, float futureRewards)
+    public void UpdateQValue(StateDict state, PlayerManager.Action action, float oldQ, float reward, float futureRewards)
     {
-        q[(state, action)] = oldQ + _alpha * ((reward + futureRewards) - oldQ);
+        var key = new StateActionDict {[state] = action};
+        if (q.ContainsKey(key))
+        {
+            Debug.Log("Set");
+            q[key] = oldQ + _alpha * ((reward + futureRewards) - oldQ); 
+        }
+        else
+        {
+            q.Add(key, oldQ + _alpha * ((reward + futureRewards) - oldQ));
+        }
     }
 
-    public float BestFutureReward(Dictionary<Vector3Int, int> state)
+    public float BestFutureReward(StateDict state)
     {
         var bestReward = 0f;
 
@@ -51,7 +95,7 @@ public class QValueSO : ScriptableObject
         return bestReward;
     }
 
-    public PlayerManager.Action ChooseAction(Dictionary<Vector3Int, int> state, bool epsilon = true)
+    public PlayerManager.Action ChooseAction(StateDict state, bool epsilon = true)
     {
         // Sort actions for player based on highest q value
         var (highestQ, sortedActions) = SortPlayerAActions(state);
@@ -69,7 +113,7 @@ public class QValueSO : ScriptableObject
         return sortedActions[highestQ][Random.Range(0, sortedActions[highestQ].Count)];
     }
 
-    (float, Dictionary<float, List<PlayerManager.Action>>) SortPlayerAActions(Dictionary<Vector3Int, int> state)
+    (float, Dictionary<float, List<PlayerManager.Action>>) SortPlayerAActions(StateDict state)
     {
         var allActions = PlayerManager.Instance.GetAllPlayerAActions(state);
         var sortedActions = new Dictionary<float, List<PlayerManager.Action>>();
@@ -96,7 +140,7 @@ public class QValueSO : ScriptableObject
         return (highestQ, sortedActions);
     }
 
-    public void UpdateModel(Dictionary<Vector3Int, int> oldState, PlayerManager.Action action, Dictionary<Vector3Int, int> newState, float reward)
+    public void UpdateModel(StateDict oldState, PlayerManager.Action action, StateDict newState, float reward)
     {
         var old = GetQValue(oldState, action);
         var bestFuture = BestFutureReward(newState);

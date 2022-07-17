@@ -3,12 +3,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Design.Serialization;
 using System.Linq;
+using System.Runtime.Serialization;
 using UnityEngine;
 using UnityEngine.PlayerLoop;
 using UnityEngine.Tilemaps;
 
 public class PlayerManager : MonoBehaviour
 {
+    [System.Serializable]
     public struct Action
     {
         public Action(Vector3Int from, Vector3Int to)
@@ -88,7 +90,7 @@ public class PlayerManager : MonoBehaviour
         _playerATurn = !_playerATurn;
     }
 
-    public List<Vector3Int> GetPlayerPositions(Dictionary<Vector3Int, int> board, int owner)
+    public List<Vector3Int> GetPlayerPositions(StateDict board, int owner)
     {
         var players = new List<Vector3Int>();
 
@@ -106,7 +108,7 @@ public class PlayerManager : MonoBehaviour
         return players;
     }
 
-    public int GetOwner(Dictionary<Vector3Int, int> board, Vector3Int playerPos)
+    public int GetOwner(StateDict board, Vector3Int playerPos)
     {
         // Check if its a valid position, and contains a player
         if (!board.TryGetValue(playerPos, out int player) || player == 0)
@@ -118,13 +120,13 @@ public class PlayerManager : MonoBehaviour
         return _playerOwnershipMap[player];
     }
 
-    public bool IsPlayersTurn(Dictionary<Vector3Int, int> board, Vector3Int playerPos)
+    public bool IsPlayersTurn(StateDict board, Vector3Int playerPos)
     {
         // Return true if position contains player owned by the active player
         return GetOwner(board, playerPos) == (_playerATurn ? 0 : 1);
     }
     
-    public List<Action> GetActions(Dictionary<Vector3Int, int> board, Vector3Int playerPos)
+    public List<Action> GetActions(StateDict board, Vector3Int playerPos)
     {
         var actions = new List<Action>();
 
@@ -153,7 +155,7 @@ public class PlayerManager : MonoBehaviour
         return actions;
     }
     
-    public List<Action> GetAllPlayerAActions(Dictionary<Vector3Int, int> board)
+    public List<Action> GetAllPlayerAActions(StateDict board)
     {
         var allActions = new List<Action>();
         

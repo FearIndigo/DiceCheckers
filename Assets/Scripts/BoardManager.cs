@@ -13,8 +13,8 @@ public class BoardManager : MonoBehaviour
     [SerializeField] private Tilemap _actionsTilemap;
     [SerializeField] private TileBase _actionTile;
     [SerializeField] private Vector3Int _boardOffset;
-    private Dictionary<Vector3Int, int> _board;
-    public Dictionary<Vector3Int, int> Board => _board;
+    private StateDict _board;
+    public StateDict Board => _board;
 
     // Start is called before the first frame update
     void Start()
@@ -39,7 +39,7 @@ public class BoardManager : MonoBehaviour
 
     public void Reset()
     {
-        _board = new Dictionary<Vector3Int, int>();
+        _board = new StateDict();
         for (int x = 0; x < 8; x++)
         {
             for (int y = 0; y < 8; y++)
@@ -97,7 +97,7 @@ public class BoardManager : MonoBehaviour
         return true;
     }
 
-    public Dictionary<Vector3Int, int> Result(Dictionary<Vector3Int, int> board, PlayerManager.Action action, int owner)
+    public StateDict Result(StateDict board, PlayerManager.Action action, int owner)
     {
         // Test From has value that is a player, and To is a valid position that isn't a player on the same team
         if (!board.TryGetValue(action.From, out int from) || from == 0 || !board.TryGetValue(action.To, out int to) || from == to)
@@ -114,7 +114,8 @@ public class BoardManager : MonoBehaviour
         }
         
         // Copy board
-        var newBoard = new Dictionary<Vector3Int, int>(board);
+        var newBoard = new StateDict();
+        newBoard = board;
         
         // If owner A upgrading to super player
         if(PlayerManager.Instance.GetOwner(board, action.From) == 0 && action.To.y == 7)
@@ -149,7 +150,7 @@ public class BoardManager : MonoBehaviour
         }
     }
 
-    public bool Terminal(Dictionary<Vector3Int, int> board)
+    public bool Terminal(StateDict board)
     {
         for (int i = 0; i < 2; i++)
         {

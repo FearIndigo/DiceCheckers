@@ -14,3 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _alpha: 0.5
   _epsilon: 0.1
+  _brainSavePath: brain.json
