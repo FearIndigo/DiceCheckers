@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8341090d23e8f2a429fd64a063976801, type: 3}
   m_Name: QValue
   m_EditorClassIdentifier: 
-  _alpha: 0.8
-  _epsilon: 0.2
+  _alpha: 0.5
+  _epsilon: 0.1

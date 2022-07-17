@@ -13,6 +13,7 @@ public class AiManager : MonoBehaviour
     [SerializeField] private DictionaryIntInt _normalisationMap;
     private Dictionary<bool, (Dictionary<Vector3Int, int>, PlayerManager.Action)> last;
     [SerializeField] private float _killReward;
+    [SerializeField] private float _playerLostReward;
     [SerializeField] private float _winReward;
     [SerializeField] private float _loseReward;
 
@@ -32,18 +33,21 @@ public class AiManager : MonoBehaviour
 
     public void Reset()
     {
-        if (_training)
+        if (PlayerManager.Instance.HasAI)
         {
-            Debug.Log("Training Rounds Remaining: " + _numTraining);
-            last = new Dictionary<bool, (Dictionary<Vector3Int, int>, PlayerManager.Action)>
+            if (_training)
             {
-                [true] = new (null, new PlayerManager.Action()),
-                [false] = new (null, new PlayerManager.Action())
-            };
-        }
-        else
-        {
-            Debug.Log("Using Q Model with " + _qValueSO.GetCount() + " Weightings");
+                Debug.Log("Training Rounds Remaining: " + _numTraining);
+                last = new Dictionary<bool, (Dictionary<Vector3Int, int>, PlayerManager.Action)>
+                {
+                    [true] = new (null, new PlayerManager.Action()),
+                    [false] = new (null, new PlayerManager.Action())
+                };
+            }
+            else
+            {
+                Debug.Log("Using Q Model with " + _qValueSO.GetCount() + " Weightings");
+            }
         }
     }
 
@@ -131,24 +135,26 @@ public class AiManager : MonoBehaviour
             // Update model if training
             if (_training)
             {
-                var previous = last[PlayerManager.Instance.PlayerATurn];
+                var previousOpponentMove = last[PlayerManager.Instance.PlayerATurn];
                 var newState = NormalisedState(BoardManager.Instance.Board);
                 if (BoardManager.Instance.Terminal(newState))
                 {
                     // Update model for winning player
                     _qValueSO.UpdateModel(state, action, newState, _winReward);
                     // Update model for losing player
-                    _qValueSO.UpdateModel(previous.Item1, previous.Item2, newState, _loseReward);
+                    _qValueSO.UpdateModel(previousOpponentMove.Item1, previousOpponentMove.Item2, newState, _loseReward);
 
                     // End training round
                     EndTrainingRound();
                 }
-                else if (previous.Item1 != null)
+                else if (previousOpponentMove.Item1 != null)
                 {
                     var prevNumOpponents = PlayerManager.Instance.GetPlayerPositions(state, 1).Count;
                     var newNumOpponents = PlayerManager.Instance.GetPlayerPositions(newState, 1).Count;
-                    // Update model when continuing play, small reward for killing opponents
-                    _qValueSO.UpdateModel(previous.Item1, previous.Item2, newState, newNumOpponents < prevNumOpponents ? _killReward : 0);
+                    // Update move made by player reward
+                    _qValueSO.UpdateModel(state, action, newState, newNumOpponents < prevNumOpponents ? _killReward : 0);
+                    // Update move made by previous player reward
+                    _qValueSO.UpdateModel(previousOpponentMove.Item1, previousOpponentMove.Item2, newState, newNumOpponents < prevNumOpponents ? _playerLostReward : 0);
                 }
             }
         }

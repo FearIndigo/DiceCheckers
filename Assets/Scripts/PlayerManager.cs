@@ -28,6 +28,7 @@ public class PlayerManager : MonoBehaviour
     [SerializeField] private bool _playerATurn;
     private bool _playerAAi;
     private bool _playerBAi;
+    public bool HasAI => _playerAAi || _playerBAi;
     
     public bool PlayerATurn => _playerATurn;
     
@@ -141,7 +142,7 @@ public class PlayerManager : MonoBehaviour
         {
             var to = playerPos + move;
             // Check To position is valid and doesnt have player on the same team
-            if (board.TryGetValue(to, out int toVal) && toVal != player)
+            if (board.TryGetValue(to, out int toVal) && (toVal == 0 || _playerOwnershipMap[toVal] != _playerOwnershipMap[player]))
             {
                 // Add to potential actions
                 actions.Add(new Action(playerPos, to));
