@@ -83,11 +83,11 @@ public class PlayerManager : MonoBehaviour
 
     public void ChangePlayerTurn()
     {
-        // Change available moveset
-        DiceManager.Instance.UpdateMove();
-
         // Swap the active player
         _playerATurn = !_playerATurn;
+        
+        // Change available moveset
+        DiceManager.Instance.UpdateMove();
     }
 
     public List<Vector3Int> GetPlayerPositions(StateDict board, int owner)
