@@ -1515,7 +1515,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _qValueSO: {fileID: 11400000, guid: 463ed7e4420ca48428015f735da80c96, type: 2}
   _training: 0
-  _numTraining: 100
+  _numTraining: 10000
   _normalisationMap:
     _Buckets: 0000000001000000020000000300000004000000ffffffffffffffff
     _HashCodes: 00000000010000000200000003000000040000000000000000000000
