@@ -23,7 +23,7 @@ public class InputManager : MonoBehaviour
         }
         else if (Instance != this)
         {
-            Destroy(gameObject);
+            Destroy(this);
         }
 
         _mainCam = Camera.main;
@@ -45,6 +45,23 @@ public class InputManager : MonoBehaviour
 
     private void Update()
     {
+        // Let AI make their turn
+        if (!PlayerManager.Instance.IsHumanTurn())
+        {
+            var board = BoardManager.Instance.Board;
+
+            if (!BoardManager.Instance.Terminal(board))
+            {
+                // Perform action on board
+                if (!AiManager.Instance.InferAction(board))
+                {
+                    Debug.LogError("AI couldn't perform action!");
+                }
+            }
+
+            return;
+        }
+        
         // If left mouse button pressed
         if (Input.GetMouseButtonDown(0))
         {

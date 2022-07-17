@@ -23,7 +23,7 @@ public class GameManager : MonoBehaviour
         }
         else if (Instance != this)
         {
-            Destroy(gameObject);
+            Destroy(this);
         }
         
         // Reset game
@@ -44,6 +44,7 @@ public class GameManager : MonoBehaviour
         _winnerText.text = "";
         BoardManager.Instance.Reset();
         PlayerManager.Instance.Reset();
+        AiManager.Instance.Reset();
         DiceManager.Instance.Reset();
         InputManager.Instance.Reset();
     }
@@ -51,5 +52,7 @@ public class GameManager : MonoBehaviour
     public void GameWinner(int owner)
     {
         _winnerText.text = _playerNames[owner] + " Wins!";
+        
+        Debug.Log(_winnerText.text);
     }
 }

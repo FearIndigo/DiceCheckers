@@ -25,7 +25,7 @@ public class BoardManager : MonoBehaviour
         }
         else if (Instance != this)
         {
-            Destroy(gameObject);
+            Destroy(this);
         }
     }
     

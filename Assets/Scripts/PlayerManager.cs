@@ -24,7 +24,10 @@ public class PlayerManager : MonoBehaviour
     [SerializeField] private DictionaryIntInt _playerTileMap;
     [SerializeField] private DictionaryIntInt _playerOwnershipMap;
     [SerializeField] private TileBase[] _playerTiles;
-    private bool _playerATurn;
+    [SerializeField] private bool _playerATurn;
+    private bool _playerAAi;
+    private bool _playerBAi;
+    
     public bool PlayerATurn => _playerATurn;
     
     // Start is called before the first frame update
@@ -33,26 +36,40 @@ public class PlayerManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
+            DontDestroyOnLoad(gameObject);
         }
         else if (Instance != this)
         {
-            Destroy(gameObject);
-        }
-    }
-    
-    private void OnDestroy()
-    {
-        if (Instance == this)
-        {
-            Instance = null;
+            Destroy(this);
         }
     }
 
     public void Reset()
     {
         _playerATurn = true;
-        
-        Debug.Log("It is player " + (_playerATurn ? "A's" : "B's") + " turn.");
+    }
+
+    public bool IsHumanTurn()
+    {
+        return _playerATurn ? !_playerAAi : !_playerBAi;
+    }
+
+    public void Set2PlayerMode()
+    {
+        _playerAAi = false;
+        _playerBAi = false;
+    }
+
+    public void Set1PlayerMode()
+    {
+        _playerAAi = false;
+        _playerBAi = true;
+    }
+
+    public void Set0PlayerMode()
+    {
+        _playerAAi = true;
+        _playerBAi = true;
     }
 
     public TileBase GetPlayerTile(int playerValue)
@@ -132,5 +149,24 @@ public class PlayerManager : MonoBehaviour
 
         // Return possible actions
         return actions;
+    }
+    
+    public List<Action> GetAllPlayerAActions(Dictionary<Vector3Int, int> board)
+    {
+        var allActions = new List<Action>();
+        
+        var playerPositions = GetPlayerPositions(board, 0);
+
+        // Loop all player positions
+        foreach (var playerPos in playerPositions)
+        {
+            var actions = GetActions(board, playerPos);
+            if (actions.Count != 0)
+            {
+                allActions.AddRange(actions);
+            }
+        }
+
+        return allActions;
     }
 }
