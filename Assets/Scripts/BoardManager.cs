@@ -12,9 +12,11 @@ public class BoardManager : MonoBehaviour
     [SerializeField] private Tilemap _playerTilemap;
     [SerializeField] private Tilemap _actionsTilemap;
     [SerializeField] private TileBase _actionTile;
-    [SerializeField] private Vector3Int _boardOffset;
-    private StateDict _board;
-    public StateDict Board => _board;
+    private Vector3Int _boardOffset;
+    [SerializeField] private int _boardSize;
+    public int BoardSize => _boardSize;
+    private QValueSO.State _board;
+    public QValueSO.State Board => _board;
 
     // Start is called before the first frame update
     void Start()
@@ -39,25 +41,31 @@ public class BoardManager : MonoBehaviour
 
     public void Reset()
     {
-        _board = new StateDict();
-        for (int x = 0; x < 8; x++)
+        _boardOffset = new Vector3Int(-_boardSize / 2, -_boardSize / 2);
+        _board = new QValueSO.State();
+        _board.Positions = new List<Vector3Int>();
+        _board.Players = new List<int>();
+        for (int x = 0; x < _boardSize; x++)
         {
-            for (int y = 0; y < 8; y++)
+            for (int y = 0; y < _boardSize; y++)
             {
                 if (y == 0)
                 {
                     // Player 1 setup
-                    _board[new Vector3Int(x, y, 0)] = 1;
+                    _board.Positions.Add(new Vector3Int(x, y, 0));
+                    _board.Players.Add(1);
                 }
-                else if (y == 7)
+                else if (y == _boardSize - 1)
                 {
                     // Player 2 setup
-                    _board[new Vector3Int(x, y, 0)] = 2;
+                    _board.Positions.Add(new Vector3Int(x, y, 0));
+                    _board.Players.Add(2);
                 }
                 else
                 {
                     // Rest of board
-                    _board[new Vector3Int(x, y, 0)] = 0;
+                    _board.Positions.Add(new Vector3Int(x, y, 0));
+                    _board.Players.Add(0);
                 }
             }
         }
@@ -66,38 +74,38 @@ public class BoardManager : MonoBehaviour
         UpdatePlayerTiles();
     }
 
-    public bool PerformAction(PlayerManager.Action action)
+    public bool PerformAction(QValueSO.State state, PlayerManager.Action action)
     {
         // Test From has value that is a player, and To is a valid position that isn't a player on the same team
-        if (!_board.TryGetValue(action.From, out int from) || from == 0 || !_board.TryGetValue(action.To, out int to) || from == to)
+        if (!state.TryGetValue(action.From, out int from) || from == 0 || !state.TryGetValue(action.To, out int to) || from == to)
         {
             Debug.LogError("Illegal Action: (" + action.From + ", " + action.To + ").");
             return false;
         }
         
         // Check it is this players turn
-        if (!PlayerManager.Instance.IsPlayersTurn(_board, action.From))
+        if (!PlayerManager.Instance.IsPlayersTurn(state, action.From))
         {
             Debug.LogError("Can only perform action on own player.");
             return false;
         }
         
         // Move player on board
-        _board = Result(_board, action, PlayerManager.Instance.PlayerATurn ? 0 : 1);
-
+        state = Result(state, action, PlayerManager.Instance.PlayerATurn ? 0 : 1);
+        _board = state;
         // Update board visuals
         UpdatePlayerTiles();
 
         // Check if terminal board
-        if (Terminal(_board))
+        if (Terminal(state))
         {
-            GameManager.Instance.GameWinner(PlayerManager.Instance.GetOwner(_board, action.To));
+            GameManager.Instance.GameWinner(PlayerManager.Instance.GetOwner(state, action.To));
         }
         
         return true;
     }
 
-    public StateDict Result(StateDict board, PlayerManager.Action action, int owner)
+    public QValueSO.State Result(QValueSO.State board, PlayerManager.Action action, int owner)
     {
         // Test From has value that is a player, and To is a valid position that isn't a player on the same team
         if (!board.TryGetValue(action.From, out int from) || from == 0 || !board.TryGetValue(action.To, out int to) || from == to)
@@ -114,25 +122,25 @@ public class BoardManager : MonoBehaviour
         }
         
         // Copy board
-        var newBoard = new StateDict();
+        var newBoard = new QValueSO.State();
         newBoard = board;
         
         // If owner A upgrading to super player
-        if(PlayerManager.Instance.GetOwner(board, action.From) == 0 && action.To.y == 7)
+        if(PlayerManager.Instance.GetOwner(board, action.From) == 0 && action.To.y == _boardSize - 1)
         {
-            newBoard[action.To] = 3;
+            newBoard.Set(action.To, 3);
         }
         // If owner B upgrading to super player
         else if (PlayerManager.Instance.GetOwner(board, action.From) == 1 && action.To.y == 0)
         {
-            newBoard[action.To] = 4;
+            newBoard.Set(action.To, 4);
         }
         // Move player
         else
         {
-            newBoard[action.To] = newBoard[action.From];
+            newBoard.Set(action.To, from);
         }
-        newBoard[action.From] = 0;
+        newBoard.Set(action.From, 0);
         
         // Return resulting board
         return newBoard;
@@ -150,7 +158,7 @@ public class BoardManager : MonoBehaviour
         }
     }
 
-    public bool Terminal(StateDict board)
+    public bool Terminal(QValueSO.State board)
     {
         for (int i = 0; i < 2; i++)
         {
@@ -173,14 +181,14 @@ public class BoardManager : MonoBehaviour
         List<TileChangeData> changeTiles = new List<TileChangeData>();
         
         // Loop board
-        foreach (var keyVal in _board)
+        for (int i = 0; i < _board.Positions.Count; i++)
         {
             // If there is a player
-            if (keyVal.Value != 0)
+            if (_board.Players[i] != 0)
             {
                 changeTiles.Add(new TileChangeData(
-                    (GetBoardPos(keyVal.Key)), 
-                    PlayerManager.Instance.GetPlayerTile(keyVal.Value),
+                    GetBoardPos(_board.Positions[i]), 
+                    PlayerManager.Instance.GetPlayerTile(_board.Players[i]),
                     Color.white,
                     Matrix4x4.identity
                     ));
@@ -208,7 +216,7 @@ public class BoardManager : MonoBehaviour
         foreach (var action in actions)
         {
             // White if empty, red if oposing player
-            var color = _board[action.To] == 0 ?
+            var color = _board.TryGetValue(action.To, out int to) && to == 0 ?
                 Color.white :
                 PlayerManager.Instance.GetOwner(_board, action.To) != owner ?
                     Color.red : 

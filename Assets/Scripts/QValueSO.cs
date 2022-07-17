@@ -11,72 +11,123 @@ using Random = UnityEngine.Random;
 [CreateAssetMenu(menuName = "Ai", fileName = "QValue")]
 public class QValueSO : ScriptableObject
 {
-    private QValueDict q;
-    [SerializeField] private float _alpha;
-    [SerializeField] private float _epsilon;
-
-    public void SaveBrain(string path)
+    [System.Serializable]
+    public struct State
     {
-        Debug.Log("Saving brain at " + path);
+        public List<Vector3Int> Positions;
+        public List<int> Players;
 
-        var json = JsonUtility.ToJson(q);
-        using StreamWriter writer = new StreamWriter(path);
-        writer.Write(json);
-        Debug.Log("Saved brain weights: " + GetCount());
+        public bool TryGetValue(Vector3Int key, out int value)
+        {
+            if (this.Positions.Contains(key))
+            {
+                var index = this.Positions.IndexOf(key);
+                value = this.Players[index];
+                return true;
+            }
+
+            value = -1;
+            return false;
+        }
+
+        public void Set(Vector3Int key, int value)
+        {
+            if (this.Positions.Contains(key))
+            {
+                var index = this.Positions.IndexOf(key);
+                this.Players[index] = value;
+            }
+            else
+            {
+                this.Positions.Add(key);
+                this.Players.Add(value);
+            }
+        }
     }
 
-    public void LoadBrain(string path)
+    [System.Serializable]
+    public struct PlayersAction
     {
-        if (File.Exists(path))
+        public PlayersAction(List<int> players, PlayerManager.Action action)
         {
-            Debug.Log("Loading brain from " + path);
-            using StreamReader reader = new StreamReader(path);
-            var json = reader.ReadToEnd();
-            q = JsonUtility.FromJson<QValueDict>(json);
+            this.Players = players;
+            this.Action = action;
+        }
+        public List<int> Players;
+        public PlayerManager.Action Action;
+    }
+
+    [System.Serializable]
+    public struct QValue
+    {
+        public QValue(PlayersAction playersAction, float q)
+        {
+            this.PlayersAction = playersAction;
+            this.Q = q;
+        }
+        public PlayersAction PlayersAction;
+        public float Q;
+    }
+    
+    [SerializeField]
+    private List<QValue> _sq;
+    private Dictionary<PlayersAction, float> _q;
+    [SerializeField] private float _alpha = 0.5f;
+    [SerializeField] private float _epsilon = 0.1f;
+
+    public void SaveBrain()
+    {
+        Debug.Log("Saving Brain...");
+        _sq = new List<QValue>();
+        for (int i = 0; i < _q.Count; i++)
+        {
+            var keyVal = _q.ElementAt(i);
+            _sq.Add(new QValue(keyVal.Key, keyVal.Value));
+        }
+        Debug.Log("Saved brain weights: " + GetCount());
+    }
+    
+    
+
+    public void LoadBrain()
+    {
+        _q = new Dictionary<PlayersAction, float>();
+        if (_sq.Count > 0)
+        {
+            Debug.Log("Loading Brain...");
+            foreach (var keyVal in _sq)
+            {
+                _q.Add(keyVal.PlayersAction, keyVal.Q);
+            }
             Debug.Log("Loaded brain weights: " + GetCount());
         }
         else
         {
-            Debug.Log("New brain");
-            q = new QValueDict();
+            Debug.Log("New Brain");
         }
     }
 
     public int GetCount()
     {
-        return q.Count;
+        return _q.Count;
     }
     
-    public float GetQValue(StateDict state, PlayerManager.Action action)
+    public float GetQValue(State state, PlayerManager.Action action)
     {
-        var key = new StateActionDict {[state] = action};
-        if (q.ContainsKey(key))
-        {
-            return q[key];
-        }
-        
-        return 0;
+        return _q.GetValueOrDefault(new PlayersAction(state.Players, action), 0);
     }
     
-    public void UpdateQValue(StateDict state, PlayerManager.Action action, float oldQ, float reward, float futureRewards)
+    public void UpdateQValue(State state, PlayerManager.Action action, float oldQ, float reward, float futureRewards)
     {
-        var key = new StateActionDict {[state] = action};
-        if (q.ContainsKey(key))
-        {
-            Debug.Log("Set");
-            q[key] = oldQ + _alpha * ((reward + futureRewards) - oldQ); 
-        }
-        else
-        {
-            q.Add(key, oldQ + _alpha * ((reward + futureRewards) - oldQ));
-        }
+        var key = new PlayersAction(state.Players, action);
+        _q[key] = oldQ + _alpha * ((reward + futureRewards) - oldQ);
     }
 
-    public float BestFutureReward(StateDict state)
+    public float BestFutureReward(State state, int owner)
     {
         var bestReward = 0f;
 
-        var allActions = PlayerManager.Instance.GetAllPlayerAActions(state);
+        var allActions = PlayerManager.Instance.GetAllPlayerActions(state, owner);
 
         if (allActions.Count == 0) return bestReward;
 
@@ -95,10 +146,10 @@ public class QValueSO : ScriptableObject
         return bestReward;
     }
 
-    public PlayerManager.Action ChooseAction(StateDict state, bool epsilon = true)
+    public PlayerManager.Action ChooseAction(State state, int owner, bool epsilon = true)
     {
         // Sort actions for player based on highest q value
-        var (highestQ, sortedActions) = SortPlayerAActions(state);
+        var (highestQ, sortedActions) = SortPlayerActions(state, owner);
 
         // If epsilon is true and given random probability
         if (epsilon && Random.value < _epsilon)
@@ -109,13 +160,15 @@ public class QValueSO : ScriptableObject
             return randomQActions[Random.Range(0, randomQActions.Count)];
         }
         
+        Debug.Log(highestQ);
+        
         // Return random action with highest q value
         return sortedActions[highestQ][Random.Range(0, sortedActions[highestQ].Count)];
     }
 
-    (float, Dictionary<float, List<PlayerManager.Action>>) SortPlayerAActions(StateDict state)
+    (float, Dictionary<float, List<PlayerManager.Action>>) SortPlayerActions(State state, int owner)
     {
-        var allActions = PlayerManager.Instance.GetAllPlayerAActions(state);
+        var allActions = PlayerManager.Instance.GetAllPlayerActions(state, owner);
         var sortedActions = new Dictionary<float, List<PlayerManager.Action>>();
         var highestQ = -1f;
         // Loop actions
@@ -140,10 +193,10 @@ public class QValueSO : ScriptableObject
         return (highestQ, sortedActions);
     }
 
-    public void UpdateModel(StateDict oldState, PlayerManager.Action action, StateDict newState, float reward)
+    public void UpdateModel(State oldState, PlayerManager.Action action, int owner, State newState, float reward)
     {
         var old = GetQValue(oldState, action);
-        var bestFuture = BestFutureReward(newState);
+        var bestFuture = BestFutureReward(newState, owner);
         UpdateQValue(oldState, action, old, reward, bestFuture);
     }
 }

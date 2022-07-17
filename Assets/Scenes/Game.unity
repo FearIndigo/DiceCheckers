@@ -5066,7 +5066,7 @@ MonoBehaviour:
   _playerTilemap: {fileID: 838741095}
   _actionsTilemap: {fileID: 674520114}
   _actionTile: {fileID: 11400000, guid: 1f3f220efce3eed479ca1e0c25065046, type: 2}
-  _boardOffset: {x: -4, y: -4, z: 0}
+  _boardSize: 8
 --- !u!4 &1200637667
 Transform:
   m_ObjectHideFlags: 0

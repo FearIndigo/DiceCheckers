@@ -90,25 +90,25 @@ public class PlayerManager : MonoBehaviour
         DiceManager.Instance.UpdateMove();
     }
 
-    public List<Vector3Int> GetPlayerPositions(StateDict board, int owner)
+    public List<Vector3Int> GetPlayerPositions(QValueSO.State board, int owner)
     {
         var players = new List<Vector3Int>();
 
         // Loop all positions on board
-        foreach (var keyVal in board)
+        for (int i = 0; i < board.Positions.Count; i++)
         {
             // If position is owned by player
-            if (GetOwner(board, keyVal.Key) == owner)
+            if (GetOwner(board, board.Positions[i]) == owner)
             {
                 // Add to players
-                players.Add(keyVal.Key);
+                players.Add(board.Positions[i]);
             }
         }
 
         return players;
     }
 
-    public int GetOwner(StateDict board, Vector3Int playerPos)
+    public int GetOwner(QValueSO.State board, Vector3Int playerPos)
     {
         // Check if its a valid position, and contains a player
         if (!board.TryGetValue(playerPos, out int player) || player == 0)
@@ -120,13 +120,13 @@ public class PlayerManager : MonoBehaviour
         return _playerOwnershipMap[player];
     }
 
-    public bool IsPlayersTurn(StateDict board, Vector3Int playerPos)
+    public bool IsPlayersTurn(QValueSO.State board, Vector3Int playerPos)
     {
         // Return true if position contains player owned by the active player
         return GetOwner(board, playerPos) == (_playerATurn ? 0 : 1);
     }
     
-    public List<Action> GetActions(StateDict board, Vector3Int playerPos)
+    public List<Action> GetActions(QValueSO.State board, Vector3Int playerPos)
     {
         var actions = new List<Action>();
 
@@ -155,11 +155,11 @@ public class PlayerManager : MonoBehaviour
         return actions;
     }
     
-    public List<Action> GetAllPlayerAActions(StateDict board)
+    public List<Action> GetAllPlayerActions(QValueSO.State board, int owner)
     {
         var allActions = new List<Action>();
         
-        var playerPositions = GetPlayerPositions(board, 0);
+        var playerPositions = GetPlayerPositions(board, owner);
 
         // Loop all player positions
         foreach (var playerPos in playerPositions)

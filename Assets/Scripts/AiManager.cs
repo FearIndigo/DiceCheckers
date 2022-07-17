@@ -9,27 +9,24 @@ public class AiManager : MonoBehaviour
     public static AiManager Instance;
 
     [SerializeField] private QValueSO _qValueSO;
-    [SerializeField] private string _brainFilename;
-    private string path;
-    private string persistentPath;
     [SerializeField] private bool _training;
+    public bool Training => _training;
     [SerializeField] private int _numTraining;
+    private int _numTrainingRemaining;
     [SerializeField] private DictionaryIntInt _normalisationMap;
-    private Dictionary<bool, (StateDict, PlayerManager.Action)> last;
-    [SerializeField] private float _killReward;
-    [SerializeField] private float _playerLostReward;
+    private Dictionary<bool, (QValueSO.State, PlayerManager.Action)> last;
     [SerializeField] private float _winReward;
     [SerializeField] private float _loseReward;
 
     // Start is called before the first frame update
     void Start()
     {
+        _numTrainingRemaining = _numTraining;
         if (Instance == null)
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            SetPaths();
-            _qValueSO.LoadBrain(path);
+            _qValueSO.LoadBrain();
         }
         else if (Instance != this)
         {
@@ -41,29 +38,23 @@ public class AiManager : MonoBehaviour
     {
         if (Instance == this)
         {
-            _qValueSO.SaveBrain(path);
+            _qValueSO.SaveBrain();
         }
-    }
-
-    void SetPaths()
-    {
-        path = Application.dataPath + Path.AltDirectorySeparatorChar + _brainFilename;
-        persistentPath = Application.persistentDataPath + Path.AltDirectorySeparatorChar + _brainFilename;
     }
 
     public void Reset()
     {
-        last = new Dictionary<bool, (StateDict, PlayerManager.Action)>
+        last = new Dictionary<bool, (QValueSO.State, PlayerManager.Action)>
         {
-            [true] = new (null, new PlayerManager.Action()),
-            [false] = new (null, new PlayerManager.Action())
+            [true] = new (default, new PlayerManager.Action()),
+            [false] = new (default, new PlayerManager.Action())
         };
         
         if (PlayerManager.Instance.HasAI)
         {
             if (_training)
             {
-                Debug.Log("Training Rounds Remaining: " + _numTraining);
+                Debug.Log("Training Rounds Remaining: " + _numTrainingRemaining);
             }
             else
             {
@@ -81,37 +72,40 @@ public class AiManager : MonoBehaviour
     {
         if (_training)
         {
-            if (_numTraining == 0)
+            if (_numTrainingRemaining == 0)
             {
-                _qValueSO.SaveBrain(path);
+                _qValueSO.SaveBrain();
                 
                 Debug.Log("Training Complete. QValue Count: " + _qValueSO.GetCount());
             }
             else
             {
-                _numTraining--;
+                _numTrainingRemaining--;
         
                 GameManager.Instance.Reset();
             }
         }
     }
 
-    public StateDict NormalisedState(StateDict board)
+    public QValueSO.State NormalisedState(QValueSO.State board)
     {
         // If player A turn, already normalised
         if (PlayerManager.Instance.PlayerATurn) return board;
         
         // Copy board
-        var state = new StateDict();
+        var state = new QValueSO.State();
+        state.Positions = new List<Vector3Int>();
+        state.Players = new List<int>();
         
         // Loop over all state pieces
-        foreach (var keyVal in board)
+        for (int i = 0; i < board.Positions.Count; i++)
         {
             // Get normalised key
-            var normKey = Normalise(keyVal.Key);
+            var normKey = Normalise(board.Positions[i]);
             
             // Change values
-            state[normKey] = _normalisationMap[keyVal.Value];
+            state.Positions.Add(normKey);
+            state.Players.Add(_normalisationMap[board.Players[i]]);
         }
 
         return state;
@@ -120,8 +114,8 @@ public class AiManager : MonoBehaviour
     private Vector3Int Normalise(Vector3Int val)
     {
         var norm = val;
-        norm.y = Mathf.Abs(norm.y - 7);
-        norm.x = Mathf.Abs(norm.x - 7);
+        norm.y = Mathf.Abs(norm.y - (BoardManager.Instance.BoardSize - 1));
+        norm.x = Mathf.Abs(norm.x - (BoardManager.Instance.BoardSize - 1));
 
         return norm;
     }
@@ -138,44 +132,44 @@ public class AiManager : MonoBehaviour
         return normAction;
     }
 
-    public bool InferAction(StateDict board)
+    public bool InferAction(QValueSO.State board)
     {
-        var state = NormalisedState(board);
-        var normAction = _qValueSO.ChooseAction(state, _training);
+        //var state = NormalisedState(board);
+        var state = board;
         var playerATurn = PlayerManager.Instance.PlayerATurn;
-        var action = NormaliseAction(normAction);
-        var valid = BoardManager.Instance.PerformAction(action);
-
-        last[playerATurn] = (state, action);
-
+        var owner = playerATurn ? 0 : 1;
+        var normAction = _qValueSO.ChooseAction(state, owner, _training);
+        
+        //var action = NormaliseAction(normAction);
+        var action = normAction;
+        var valid = BoardManager.Instance.PerformAction(state, action);
+        
         if (valid)
         {
+            last[playerATurn] = (state, action);
+            //var newState = NormalisedState(BoardManager.Instance.Board);
+            var newState = BoardManager.Instance.Board;
+            var previousOpponentMove = last[!PlayerManager.Instance.PlayerATurn];
             // Change player turns
             PlayerManager.Instance.ChangePlayerTurn();
 
             // Update model if training
             if (_training)
             {
-                var previousOpponentMove = last[PlayerManager.Instance.PlayerATurn];
-                var newState = NormalisedState(BoardManager.Instance.Board);
                 if (BoardManager.Instance.Terminal(newState))
                 {
                     // Update model for winning player
-                    _qValueSO.UpdateModel(state, action, newState, _winReward);
+                    _qValueSO.UpdateModel(state, action, owner, newState, _winReward);
                     // Update model for losing player
-                    _qValueSO.UpdateModel(previousOpponentMove.Item1, previousOpponentMove.Item2, newState, _loseReward);
+                    _qValueSO.UpdateModel(previousOpponentMove.Item1, previousOpponentMove.Item2, owner % 1, state, _loseReward);
 
                     // End training round
                     EndTrainingRound();
                 }
-                else if (previousOpponentMove.Item1 != null)
+                else if (previousOpponentMove.Item1.Positions != null)
                 {
-                    var prevNumOpponents = PlayerManager.Instance.GetPlayerPositions(state, 1).Count;
-                    var newNumOpponents = PlayerManager.Instance.GetPlayerPositions(newState, 1).Count;
-                    // Update move made by player reward
-                    _qValueSO.UpdateModel(state, action, newState, newNumOpponents < prevNumOpponents ? _killReward : 0);
-                    // Update move made by previous player reward
-                    _qValueSO.UpdateModel(previousOpponentMove.Item1, previousOpponentMove.Item2, newState, newNumOpponents < prevNumOpponents ? _playerLostReward : 0);
+                    // Update previous opponent move
+                    _qValueSO.UpdateModel(previousOpponentMove.Item1, previousOpponentMove.Item2, owner % 1, state, 0);
                 }
             }
         }
