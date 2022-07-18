@@ -71,6 +71,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 382b1b5acc6a12c4584600188fd708e7, type: 2}
   - {fileID: 11400000, guid: 044752c4abf870b4a8384803441c8264, type: 2}
   _playerATurn: 0
+  _playerAAi: 1
+  _playerBAi: 1
 --- !u!114 &4160515694952147055
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -83,18 +85,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4651a782ea3fbc844af3dfd8b2a99184, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _qValueSO: {fileID: 11400000, guid: 463ed7e4420ca48428015f735da80c96, type: 2}
-  _training: 0
-  _numTraining: 1000
-  _normalisationMap:
-    _Buckets: 0000000001000000020000000300000004000000ffffffffffffffff
-    _HashCodes: 00000000010000000200000003000000040000000000000000000000
-    _Next: ffffffffffffffffffffffffffffffffffffffff0000000000000000
-    _Count: 5
-    _Version: 29
-    _FreeList: -1
-    _FreeCount: 0
-    _Keys: 00000000010000000200000003000000040000000000000000000000
-    _Values: 00000000020000000100000004000000030000000000000000000000
-  _winReward: 1
-  _loseReward: -1
+  _aiAgentPrefab: {fileID: 4776691297128200104, guid: d3779d2d28c9abb4c974093620c80d09, type: 3}

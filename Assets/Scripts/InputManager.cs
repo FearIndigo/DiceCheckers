@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Design.Serialization;
+using Unity.MLAgents;
 using UnityEngine;
 using UnityEngine.PlayerLoop;
 using UnityEngine.Tilemaps;
@@ -48,6 +49,8 @@ public class InputManager : MonoBehaviour
         // Let AI make their turn
         if (!PlayerManager.Instance.IsHumanTurn())
         {
+            AiManager.Instance.InferAction();
+            Academy.Instance.EnvironmentStep();
             return;
         }
         
@@ -114,7 +117,7 @@ public class InputManager : MonoBehaviour
                 }
                 
                 // Perform action on board
-                if (BoardManager.Instance.PerformAction(board, action))
+                if (BoardManager.Instance.PerformAction(action))
                 {
                     // Unselect player
                     UpdateSelected(_unselectedVal);

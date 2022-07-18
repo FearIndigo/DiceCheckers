@@ -14,6 +14,9 @@ public class DiceManager : MonoBehaviour
     [SerializeField] private Sprite[] _moveSprites;
     private List<Vector3Int>[] _allMoves;
     private List<Vector3Int> _currentMove;
+    private int _index;
+    public int Index => _index;
+    public int NumMoves => _allMoves?.Length ?? 0;
     public List<Vector3Int> CurrentMove => _currentMove;
 
     public List<Vector3Int> SuperMove
@@ -162,5 +165,7 @@ public class DiceManager : MonoBehaviour
 
         // Update sprite
         _renderer.sprite = _moveSprites[index];
+
+        _index = index;
     }
 }

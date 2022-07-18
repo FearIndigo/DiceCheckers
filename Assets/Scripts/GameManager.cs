@@ -42,10 +42,10 @@ public class GameManager : MonoBehaviour
     {
         _playerNames = new string[] {"Player A", "Player B"};
         _winnerText.text = "";
-        BoardManager.Instance.Reset();
-        PlayerManager.Instance.Reset();
-        DiceManager.Instance.Reset();
-        InputManager.Instance.Reset();
+        BoardManager.Instance?.Reset();
+        DiceManager.Instance?.Reset();
+        InputManager.Instance?.Reset();
+        PlayerManager.Instance?.Reset();
     }
 
     public void GameWinner(int owner)

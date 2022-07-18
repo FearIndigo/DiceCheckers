@@ -46,8 +46,8 @@ public class PlayerManager : MonoBehaviour
     [SerializeField] private DictionaryIntInt _playerOwnershipMap;
     [SerializeField] private TileBase[] _playerTiles;
     [SerializeField] private bool _playerATurn;
-    private bool _playerAAi;
-    private bool _playerBAi;
+    [SerializeField] private bool _playerAAi;
+    [SerializeField] private bool _playerBAi;
     public bool HasAI => _playerAAi || _playerBAi;
     
     public bool PlayerATurn => _playerATurn;
@@ -69,6 +69,7 @@ public class PlayerManager : MonoBehaviour
     public void Reset()
     {
         _playerATurn = true;
+        AiManager.Instance.Setup(_playerAAi, _playerBAi);
     }
 
     public bool IsHumanTurn()

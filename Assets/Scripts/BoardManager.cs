@@ -69,34 +69,34 @@ public class BoardManager : MonoBehaviour
         UpdatePlayerTiles();
     }
 
-    public bool PerformAction(Dictionary<Vector3Int, int> state, PlayerManager.Action action)
+    public bool PerformAction(PlayerManager.Action action)
     {
         // Test From has value that is a player, and To is a valid position that isn't a player on the same team
-        if (!state.TryGetValue(action.From, out int from) || from == 0 || !state.TryGetValue(action.To, out int to) || from == to)
+        if (!_board.TryGetValue(action.From, out int from) || from == 0 || !_board.TryGetValue(action.To, out int to) || from == to)
         {
             Debug.LogError("Illegal Action: (" + action.From + ", " + action.To + ").");
             return false;
         }
         
         // Check it is this players turn
-        if (!PlayerManager.Instance.IsPlayersTurn(state, action.From))
+        if (!PlayerManager.Instance.IsPlayersTurn(_board, action.From))
         {
             Debug.LogError("Can only perform action on own player.");
             return false;
         }
         
         // Move player on board
-        state = Result(state, action, PlayerManager.Instance.PlayerATurn ? 0 : 1);
-        _board = state;
+        _board = Result(_board, action, PlayerManager.Instance.PlayerATurn ? 0 : 1);
+        
         // Update board visuals
         UpdatePlayerTiles();
 
         // Check if terminal board
-        if (Terminal(state))
+        if (Terminal(_board))
         {
-            GameManager.Instance.GameWinner(PlayerManager.Instance.GetOwner(state, action.To));
+            GameManager.Instance.GameWinner(PlayerManager.Instance.GetOwner(_board, action.To));
         }
-        
+
         return true;
     }
 
