@@ -74,3 +74,6 @@ crashlytics-build.properties
 
 # IDE
 .idea
+
+# Venv
+venv

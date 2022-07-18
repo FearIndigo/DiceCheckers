@@ -13,7 +13,6 @@ public class InputManager : MonoBehaviour
     private Vector3Int _selected;
     private Vector3Int _unselectedVal = new Vector3Int(-1, -1);
     private Camera _mainCam;
-    private bool _aiDeciding;
 
     // Start is called before the first frame update
     void Start()
@@ -42,27 +41,6 @@ public class InputManager : MonoBehaviour
     {
         // Change selected and update available moves visuals
         UpdateSelected(_unselectedVal);
-        StopCoroutine(nameof(AiMove));
-        _aiDeciding = false;
-    }
-
-    private IEnumerator AiMove(float delay)
-    {
-        _aiDeciding = true;
-        yield return new WaitForSeconds(delay);
-
-        var board = BoardManager.Instance.Board;
-
-        if (!BoardManager.Instance.Terminal(board))
-        {
-            // Perform action on board
-            if (!AiManager.Instance.InferAction(board))
-            {
-                Debug.LogError("AI couldn't perform action!");
-            }
-        }
-        
-        _aiDeciding = false;
     }
 
     private void Update()
@@ -70,12 +48,6 @@ public class InputManager : MonoBehaviour
         // Let AI make their turn
         if (!PlayerManager.Instance.IsHumanTurn())
         {
-            if (!_aiDeciding)
-            {
-                StopCoroutine(nameof(AiMove));
-                StartCoroutine(nameof(AiMove), AiManager.Instance.Training ? 0 : 0.5f);
-            }
-
             return;
         }
         

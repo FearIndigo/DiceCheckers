@@ -44,7 +44,6 @@ public class GameManager : MonoBehaviour
         _winnerText.text = "";
         BoardManager.Instance.Reset();
         PlayerManager.Instance.Reset();
-        AiManager.Instance.Reset();
         DiceManager.Instance.Reset();
         InputManager.Instance.Reset();
     }

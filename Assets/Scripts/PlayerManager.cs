@@ -108,25 +108,25 @@ public class PlayerManager : MonoBehaviour
         DiceManager.Instance.UpdateMove();
     }
 
-    public List<Vector3Int> GetPlayerPositions(QValueSO.State board, int owner)
+    public List<Vector3Int> GetPlayerPositions(Dictionary<Vector3Int, int> board, int owner)
     {
         var players = new List<Vector3Int>();
 
         // Loop all positions on board
-        for (int i = 0; i < board.Positions.Count; i++)
+        foreach (var keyVal in board)
         {
             // If position is owned by player
-            if (GetOwner(board, board.Positions[i]) == owner)
+            if (GetOwner(board, keyVal.Key) == owner)
             {
                 // Add to players
-                players.Add(board.Positions[i]);
+                players.Add(keyVal.Key);
             }
         }
 
         return players;
     }
 
-    public int GetOwner(QValueSO.State board, Vector3Int playerPos)
+    public int GetOwner(Dictionary<Vector3Int, int> board, Vector3Int playerPos)
     {
         // Check if its a valid position, and contains a player
         if (!board.TryGetValue(playerPos, out int player) || player == 0)
@@ -138,13 +138,13 @@ public class PlayerManager : MonoBehaviour
         return _playerOwnershipMap[player];
     }
 
-    public bool IsPlayersTurn(QValueSO.State board, Vector3Int playerPos)
+    public bool IsPlayersTurn(Dictionary<Vector3Int, int> board, Vector3Int playerPos)
     {
         // Return true if position contains player owned by the active player
         return GetOwner(board, playerPos) == (_playerATurn ? 0 : 1);
     }
     
-    public List<Action> GetActions(QValueSO.State board, Vector3Int playerPos)
+    public List<Action> GetActions(Dictionary<Vector3Int, int> board, Vector3Int playerPos)
     {
         var actions = new List<Action>();
 
@@ -173,7 +173,7 @@ public class PlayerManager : MonoBehaviour
         return actions;
     }
     
-    public List<Action> GetAllPlayerActions(QValueSO.State board, int owner)
+    public List<Action> GetAllPlayerActions(Dictionary<Vector3Int, int> board, int owner)
     {
         var allActions = new List<Action>();
         

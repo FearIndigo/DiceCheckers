@@ -15,8 +15,8 @@ public class BoardManager : MonoBehaviour
     private Vector3Int _boardOffset;
     [SerializeField] private int _boardSize;
     public int BoardSize => _boardSize;
-    private QValueSO.State _board;
-    public QValueSO.State Board => _board;
+    private Dictionary<Vector3Int, int> _board;
+    public Dictionary<Vector3Int, int> Board => _board;
 
     // Start is called before the first frame update
     void Start()
@@ -42,9 +42,7 @@ public class BoardManager : MonoBehaviour
     public void Reset()
     {
         _boardOffset = new Vector3Int(-_boardSize / 2, -_boardSize / 2);
-        _board = new QValueSO.State();
-        _board.Positions = new List<Vector3Int>();
-        _board.Players = new List<int>();
+        _board = new Dictionary<Vector3Int, int>();
         for (int x = 0; x < _boardSize; x++)
         {
             for (int y = 0; y < _boardSize; y++)
@@ -52,20 +50,17 @@ public class BoardManager : MonoBehaviour
                 if (y == 0)
                 {
                     // Player 1 setup
-                    _board.Positions.Add(new Vector3Int(x, y, 0));
-                    _board.Players.Add(1);
+                    _board[new Vector3Int(x, y, 0)] = 1;
                 }
                 else if (y == _boardSize - 1)
                 {
                     // Player 2 setup
-                    _board.Positions.Add(new Vector3Int(x, y, 0));
-                    _board.Players.Add(2);
+                    _board[new Vector3Int(x, y, 0)] = 2;
                 }
                 else
                 {
                     // Rest of board
-                    _board.Positions.Add(new Vector3Int(x, y, 0));
-                    _board.Players.Add(0);
+                    _board[new Vector3Int(x, y, 0)] = 0;
                 }
             }
         }
@@ -74,7 +69,7 @@ public class BoardManager : MonoBehaviour
         UpdatePlayerTiles();
     }
 
-    public bool PerformAction(QValueSO.State state, PlayerManager.Action action)
+    public bool PerformAction(Dictionary<Vector3Int, int> state, PlayerManager.Action action)
     {
         // Test From has value that is a player, and To is a valid position that isn't a player on the same team
         if (!state.TryGetValue(action.From, out int from) || from == 0 || !state.TryGetValue(action.To, out int to) || from == to)
@@ -105,7 +100,7 @@ public class BoardManager : MonoBehaviour
         return true;
     }
 
-    public QValueSO.State Result(QValueSO.State board, PlayerManager.Action action, int owner)
+    public Dictionary<Vector3Int, int> Result(Dictionary<Vector3Int, int> board, PlayerManager.Action action, int owner)
     {
         // Test From has value that is a player, and To is a valid position that isn't a player on the same team
         if (!board.TryGetValue(action.From, out int from) || from == 0 || !board.TryGetValue(action.To, out int to) || from == to)
@@ -122,25 +117,24 @@ public class BoardManager : MonoBehaviour
         }
         
         // Copy board
-        var newBoard = new QValueSO.State();
-        newBoard = board;
-        
+        var newBoard = new Dictionary<Vector3Int, int>(board);
+
         // If owner A upgrading to super player
         if(PlayerManager.Instance.GetOwner(board, action.From) == 0 && action.To.y == _boardSize - 1)
         {
-            newBoard.Set(action.To, 3);
+            newBoard[action.To] = 3;
         }
         // If owner B upgrading to super player
         else if (PlayerManager.Instance.GetOwner(board, action.From) == 1 && action.To.y == 0)
         {
-            newBoard.Set(action.To, 4);
+            newBoard[action.To] = 4;
         }
         // Move player
         else
         {
-            newBoard.Set(action.To, from);
+            newBoard[action.To] = from;
         }
-        newBoard.Set(action.From, 0);
+        newBoard[action.From] = 0;
         
         // Return resulting board
         return newBoard;
@@ -158,7 +152,7 @@ public class BoardManager : MonoBehaviour
         }
     }
 
-    public bool Terminal(QValueSO.State board)
+    public bool Terminal(Dictionary<Vector3Int, int> board)
     {
         for (int i = 0; i < 2; i++)
         {
@@ -181,14 +175,14 @@ public class BoardManager : MonoBehaviour
         List<TileChangeData> changeTiles = new List<TileChangeData>();
         
         // Loop board
-        for (int i = 0; i < _board.Positions.Count; i++)
+        foreach (var keyVal in _board)
         {
             // If there is a player
-            if (_board.Players[i] != 0)
+            if (keyVal.Value != 0)
             {
                 changeTiles.Add(new TileChangeData(
-                    GetBoardPos(_board.Positions[i]), 
-                    PlayerManager.Instance.GetPlayerTile(_board.Players[i]),
+                    GetBoardPos(keyVal.Key), 
+                    PlayerManager.Instance.GetPlayerTile(keyVal.Value),
                     Color.white,
                     Matrix4x4.identity
                     ));
