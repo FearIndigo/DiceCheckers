@@ -39,42 +39,25 @@ public class PlayerManager : MonoBehaviour
             return res;
         }
     }
-    
-    public static PlayerManager Instance;
+
+    public Environment Env;
 
     [SerializeField] private DictionaryIntInt _playerTileMap;
     [SerializeField] private DictionaryIntInt _playerOwnershipMap;
     [SerializeField] private TileBase[] _playerTiles;
     [SerializeField] private bool _playerATurn;
     [SerializeField] private bool _playerAAi;
+    public bool PlayerAAi => _playerAAi;
     [SerializeField] private bool _playerBAi;
+    public bool PlayerBAi => _playerBAi;
     public bool HasAI => _playerAAi || _playerBAi;
+    public bool IsAiTurn => _playerATurn ? _playerAAi : _playerBAi;
     
     public bool PlayerATurn => _playerATurn;
-    
-    // Start is called before the first frame update
-    void Start()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else if (Instance != this)
-        {
-            Destroy(this);
-        }
-    }
 
     public void Reset()
     {
         _playerATurn = true;
-        AiManager.Instance.Setup(_playerAAi, _playerBAi);
-    }
-
-    public bool IsHumanTurn()
-    {
-        return _playerATurn ? !_playerAAi : !_playerBAi;
     }
 
     public void Set2PlayerMode()
@@ -105,8 +88,13 @@ public class PlayerManager : MonoBehaviour
         // Swap the active player
         _playerATurn = !_playerATurn;
         
+        if (HasAI && _playerATurn)
+        {
+            Env.UpdateSteps();
+        }
+        
         // Change available moveset
-        DiceManager.Instance.UpdateMove();
+        Env.Dice.UpdateMove();
     }
 
     public List<Vector3Int> GetPlayerPositions(Dictionary<Vector3Int, int> board, int owner)
@@ -156,7 +144,7 @@ public class PlayerManager : MonoBehaviour
             return actions;
         }
 
-        var currentMove = player > 2 ? DiceManager.Instance.SuperMove.Union(DiceManager.Instance.CurrentMove).ToList() : DiceManager.Instance.CurrentMove;
+        var currentMove = player > 2 ? Env.Dice.SuperMove.Union(Env.Dice.CurrentMove).ToList() : Env.Dice.CurrentMove;
 
         // Loop all possible moves
         foreach (var move in currentMove)

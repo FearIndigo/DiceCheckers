@@ -8,7 +8,7 @@ using Random = UnityEngine.Random;
 
 public class DiceManager : MonoBehaviour
 {
-    public static DiceManager Instance;
+    public Environment Env;
 
     [SerializeField] private SpriteRenderer _renderer;
     [SerializeField] private Sprite[] _moveSprites;
@@ -23,27 +23,6 @@ public class DiceManager : MonoBehaviour
     {
         get;
         private set;
-    }
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else if (Instance != this)
-        {
-            Destroy(this);
-        }
-    }
-    
-    private void OnDestroy()
-    {
-        if (Instance == this)
-        {
-            Instance = null;
-        }
     }
 
     public void Reset()
@@ -122,10 +101,10 @@ public class DiceManager : MonoBehaviour
     
     public void UpdateMove()
     {
-        var board = BoardManager.Instance.Board;
+        var board = Env.Board.Board;
         
         // Exit if terminal board
-        if (BoardManager.Instance.Terminal(board))
+        if (Env.Board.Terminal(board))
         {
             return;
         }
@@ -147,13 +126,13 @@ public class DiceManager : MonoBehaviour
             for (int i = 0; i < 2; i++)
             {
                 // Get players for owner
-                var playerPositions = PlayerManager.Instance.GetPlayerPositions(board, i);
+                var playerPositions = Env.Players.GetPlayerPositions(board, i);
                 
                 // Loop players for owner
                 foreach (var playerPos in playerPositions)
                 {
                     // Check there are valid actions for this player
-                    if (PlayerManager.Instance.GetActions(board, playerPos).Count != 0)
+                    if (Env.Players.GetActions(board, playerPos).Count != 0)
                     {
                         // There are valid moves for this player
                         validMoves[i] = true;

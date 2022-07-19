@@ -2,15 +2,16 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Unity.MLAgents;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class AiManager : MonoBehaviour
 {
-    public static AiManager Instance;
+    public Environment Env;
 
-    private Dictionary<int,AiAgent> _aiAgents;
+    [SerializeField] private List<AiAgent> _aiAgents;
     [SerializeField] private GameObject _aiAgentPrefab;
     private Dictionary<Vector3Int,int> _moveMap = new Dictionary<Vector3Int, int>
     {
@@ -51,59 +52,23 @@ public class AiManager : MonoBehaviour
         [15] = new Vector3Int(2, -1),
     };
 
-    // Start is called before the first frame update
-    void Start()
+    public void Interrupted()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-            Academy.Instance.AutomaticSteppingEnabled = false;
-            DontDestroyOnLoad(gameObject);
-        }
-        else if (Instance != this)
-        {
-            Destroy(this);
-        }
+        _aiAgents[0].EpisodeInterrupted();
+        _aiAgents[1].EpisodeInterrupted();
+        Env.Reset();
     }
-
-    public void Setup(bool playerAAi, bool playerBAi)
-    {
-        if (playerAAi || playerBAi)
-        {
-            _aiAgents ??= new Dictionary<int, AiAgent>();
-            
-            if (playerAAi && (!_aiAgents.ContainsKey(0) || _aiAgents[0] == null))
-            {
-                Debug.Log("Spawning Player A AI...");
-                _aiAgents[0] = Instantiate(_aiAgentPrefab).GetComponent<AiAgent>();
-                _aiAgents[0].SetOpponentAndTeam(null, 0);
-            }
-
-            if (playerBAi && (!_aiAgents.ContainsKey(1) || _aiAgents[1] == null))
-            {
-                Debug.Log("Spawning Player B AI...");
-                _aiAgents[1] = Instantiate(_aiAgentPrefab).GetComponent<AiAgent>();
-                _aiAgents[1].SetOpponentAndTeam(null, 1);
-            }
-
-            if (_aiAgents.ContainsKey(0) && _aiAgents.ContainsKey(1))
-            {
-                _aiAgents[0].SetOpponentAndTeam(_aiAgents[1], 0);
-                _aiAgents[1].SetOpponentAndTeam(_aiAgents[0], 1);
-            }
-        }
-    }
-
+    
     public void InferAction()
     {
-        var owner = PlayerManager.Instance.PlayerATurn ? 0 : 1;
+        var owner = Env.Players.PlayerATurn ? 0 : 1;
         _aiAgents[owner].RequestDecision();
     }
 
     public float[] GetObservation()
     {
-        var board = BoardManager.Instance.Board;
-        var playerATurn = PlayerManager.Instance.PlayerATurn;
+        var board = Env.Board.Board;
+        var playerATurn = Env.Players.PlayerATurn;
 
         if (playerATurn)
         {
@@ -119,7 +84,7 @@ public class AiManager : MonoBehaviour
 
     private Dictionary<Vector3Int, int> BoardFromPlayerBPerspective(Dictionary<Vector3Int, int> board)
     {
-        var normFactor = BoardManager.Instance.BoardSize - 1;
+        var normFactor = Env.Board.BoardSize - 1;
         var normBoard = new Dictionary<Vector3Int, int>();
         foreach (var keyVal in board)
         {
@@ -154,7 +119,7 @@ public class AiManager : MonoBehaviour
 
     private float[] ConvertBoardToObservation(Dictionary<Vector3Int, int> board)
     {
-        var boardSize = BoardManager.Instance.BoardSize;
+        var boardSize = Env.Board.BoardSize;
         var cellCount = boardSize * boardSize;
         var observation = new float[cellCount];
         var index = 0;
@@ -199,9 +164,9 @@ public class AiManager : MonoBehaviour
         Vector3Int from = GetPositionAtIndex(cellIndex);
         Vector3Int to = from + _moveMapInverted[moveIndex];
 
-        if (!PlayerManager.Instance.PlayerATurn)
+        if (!Env.Players.PlayerATurn)
         {
-            var normFactor = BoardManager.Instance.BoardSize - 1;
+            var normFactor = Env.Board.BoardSize - 1;
             from.x = Mathf.Abs(from.x - normFactor);
             from.y = Mathf.Abs(from.y - normFactor);
             to.x = Mathf.Abs(to.x - normFactor);
@@ -213,12 +178,12 @@ public class AiManager : MonoBehaviour
 
     public Dictionary<int, bool> GetActionMasks()
     {
-        var board = PlayerManager.Instance.PlayerATurn ?
-            BoardManager.Instance.Board :
-            BoardFromPlayerBPerspective(BoardManager.Instance.Board);
+        var board = Env.Players.PlayerATurn ?
+            Env.Board.Board :
+            BoardFromPlayerBPerspective(Env.Board.Board);
         var actionMasks = new Dictionary<int, bool>();
 
-        var allActions = PlayerManager.Instance.GetAllPlayerActions(board, 0);
+        var allActions = Env.Players.GetAllPlayerActions(board, 0);
 
         // Set valid actions
         foreach (var action in allActions)
@@ -233,7 +198,7 @@ public class AiManager : MonoBehaviour
 
     public int GetIndexAtPosition(Vector3Int position)
     {
-        var boardSize = BoardManager.Instance.BoardSize;
+        var boardSize = Env.Board.BoardSize;
         var index = 0;
         for (int x = 0; x < boardSize; x++)
         {
@@ -253,7 +218,7 @@ public class AiManager : MonoBehaviour
 
     public Vector3Int GetPositionAtIndex(int testIndex)
     {
-        var boardSize = BoardManager.Instance.BoardSize;
+        var boardSize = Env.Board.BoardSize;
         var index = 0;
         for (int x = 0; x < boardSize; x++)
         {

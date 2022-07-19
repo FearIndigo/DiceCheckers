@@ -9,33 +9,15 @@ using UnityEngine.Tilemaps;
 
 public class InputManager : MonoBehaviour
 {
-    public static InputManager Instance;
+    public Environment Env;
     
     private Vector3Int _selected;
     private Vector3Int _unselectedVal = new Vector3Int(-1, -1);
     private Camera _mainCam;
 
-    // Start is called before the first frame update
-    void Start()
+    private void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else if (Instance != this)
-        {
-            Destroy(this);
-        }
-
         _mainCam = Camera.main;
-    }
-    
-    private void OnDestroy()
-    {
-        if (Instance == this)
-        {
-            Instance = null;
-        }
     }
 
     public void Reset()
@@ -44,13 +26,21 @@ public class InputManager : MonoBehaviour
         UpdateSelected(_unselectedVal);
     }
 
+    private void FixedUpdate()
+    {
+        // Let AI make their turn
+        if (Env.Players.IsAiTurn)
+        {
+            Env.Ai.InferAction();
+            return;
+        }
+    }
+
     private void Update()
     {
         // Let AI make their turn
-        if (!PlayerManager.Instance.IsHumanTurn())
+        if (Env.Players.IsAiTurn)
         {
-            AiManager.Instance.InferAction();
-            Academy.Instance.EnvironmentStep();
             return;
         }
         
@@ -59,11 +49,11 @@ public class InputManager : MonoBehaviour
         {
             // Get position in board-space
             var mousePos = Input.mousePosition;
-            var pos = BoardManager.Instance.GetBoardPos(
+            var pos = Env.Board.GetBoardPos(
                 _mainCam.ScreenToWorldPoint(new Vector3(mousePos.x, mousePos.y, _mainCam.nearClipPlane)),
                 false);
 
-            var board = BoardManager.Instance.Board;
+            var board = Env.Board.Board;
 
             // Check it's a valid position on the board
             if (!board.TryGetValue(pos, out int boardValue))
@@ -76,14 +66,14 @@ public class InputManager : MonoBehaviour
             if (_selected == _unselectedVal)
             {
                 // Check player can be selected
-                if (!PlayerManager.Instance.IsPlayersTurn(board, pos))
+                if (!Env.Players.IsPlayersTurn(board, pos))
                 {
                     Debug.LogWarning("Can only select players owned by active player.");
                     return;
                 }
                 
                 // Check there are available actions for this player
-                if (PlayerManager.Instance.GetActions(board, pos).Count == 0)
+                if (Env.Players.GetActions(board, pos).Count == 0)
                 {
                     Debug.LogWarning("Cannot select player with no available actions.");
                     return;
@@ -95,10 +85,10 @@ public class InputManager : MonoBehaviour
             else
             {
                 // Get available actions
-                var actions = PlayerManager.Instance.GetActions(board, _selected);
+                var actions = Env.Players.GetActions(board, _selected);
                 
                 // Check if we should change selected player
-                if (boardValue != 0 && PlayerManager.Instance.IsPlayersTurn(board, pos) && PlayerManager.Instance.GetActions(board, pos).Count != 0)
+                if (boardValue != 0 && Env.Players.IsPlayersTurn(board, pos) && Env.Players.GetActions(board, pos).Count != 0)
                 {
                     // Update selected player
                     UpdateSelected(pos);
@@ -117,13 +107,13 @@ public class InputManager : MonoBehaviour
                 }
                 
                 // Perform action on board
-                if (BoardManager.Instance.PerformAction(action))
+                if (Env.Board.PerformAction(action))
                 {
                     // Unselect player
                     UpdateSelected(_unselectedVal);
                     
                     // Change player turns
-                    PlayerManager.Instance.ChangePlayerTurn();
+                    Env.Players.ChangePlayerTurn();
                 }
             }
         }
@@ -133,6 +123,6 @@ public class InputManager : MonoBehaviour
     {
         _selected = selected;
 
-        BoardManager.Instance.UpdateActionsTiles(_selected);
+        Env.Board.UpdateActionsTiles(_selected);
     }
 }

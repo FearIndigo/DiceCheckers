@@ -7,25 +7,16 @@ public class MenuHelper : MonoBehaviour
 {
     public void OnPress1Player()
     {
-        PlayerManager.Instance.Set1PlayerMode();
-        SceneManagerManager.Instance.LoadGame();
+        SceneManagerManager.Instance.LoadGame1Player();
     }
 
     public void OnPress2Player()
     {
-        PlayerManager.Instance.Set2PlayerMode();
-        SceneManagerManager.Instance.LoadGame();
+        SceneManagerManager.Instance.LoadGame2Player();
     }
     
     public void OnPress0Player()
     {
-        PlayerManager.Instance.Set0PlayerMode();
-        SceneManagerManager.Instance.LoadGame();
-    }
-    
-    public void OnPressTraining()
-    {
-        PlayerManager.Instance.Set0PlayerMode();
-        SceneManagerManager.Instance.LoadGame();
+        SceneManagerManager.Instance.LoadGame0Player();
     }
 }

@@ -33,9 +33,19 @@ public class SceneManagerManager : MonoBehaviour
         }
     }
 
-    public void LoadGame()
+    public void LoadGame1Player()
     {
-        SceneManager.LoadScene("Game");
+        SceneManager.LoadScene("Game_1");
+    }
+    
+    public void LoadGame2Player()
+    {
+        SceneManager.LoadScene("Game_2");
+    }
+    
+    public void LoadGame0Player()
+    {
+        SceneManager.LoadScene("Game_0");
     }
     
     public void LoadMainMenu()

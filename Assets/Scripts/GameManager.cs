@@ -9,7 +9,7 @@ using UnityEngine.Tilemaps;
 
 public class GameManager : MonoBehaviour
 {
-    public static GameManager Instance;
+    public Environment Env;
 
     [SerializeField] private TextMeshProUGUI _winnerText;
     private string[] _playerNames;
@@ -17,35 +17,18 @@ public class GameManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else if (Instance != this)
-        {
-            Destroy(this);
-        }
-        
         // Reset game
-        Reset();
-    }
-
-    private void OnDestroy()
-    {
-        if (Instance == this)
-        {
-            Instance = null;
-        }
+        Env.Reset();
     }
 
     public void Reset()
     {
         _playerNames = new string[] {"Player A", "Player B"};
         _winnerText.text = "";
-        BoardManager.Instance?.Reset();
-        DiceManager.Instance?.Reset();
-        InputManager.Instance?.Reset();
-        PlayerManager.Instance?.Reset();
+        Env.Board.Reset();
+        Env.Dice.Reset();
+        Env.Input.Reset();
+        Env.Players.Reset();
     }
 
     public void GameWinner(int owner)

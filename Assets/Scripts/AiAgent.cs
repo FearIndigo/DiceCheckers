@@ -10,6 +10,7 @@ using UnityEngine;
 
 public class AiAgent : Agent
 {
+    public Environment Env;
     [SerializeField] private AiAgent OpponentAgent;
     private BehaviorParameters _params;
     private void Awake()
@@ -17,12 +18,6 @@ public class AiAgent : Agent
         _params = GetComponent<BehaviorParameters>();
     }
 
-    public void SetOpponentAndTeam(AiAgent opponentAgent, int teamId)
-    {
-        OpponentAgent = opponentAgent;
-        _params.TeamId = teamId;
-    }
-    
     public override void OnEpisodeBegin()
     {
         
@@ -30,37 +25,61 @@ public class AiAgent : Agent
 
     public override void CollectObservations(VectorSensor sensor)
     {
-        // Collect dice roll observation
-        sensor.AddOneHotObservation(DiceManager.Instance.Index, DiceManager.Instance.NumMoves);
         // Collect board layout observation
-        sensor.AddObservation(AiManager.Instance.GetObservation());
+        sensor.AddObservation(Env.Ai.GetObservation());
     }
 
     public override void OnActionReceived(ActionBuffers actions)
     {
-        var discrete = actions.DiscreteActions; // action index
-        
-        if (BoardManager.Instance.PerformAction(AiManager.Instance.GetAction(discrete[0])))
+        // Ignore if not this players turn
+        var owner = Env.Players.PlayerATurn ? 0 : 1;
+        var opponent = Env.Players.PlayerATurn ? 1 : 0;
+        if (_params.TeamId != owner)
         {
-            PlayerManager.Instance.ChangePlayerTurn();
+            Debug.Log("Ai attempting move when not it's turn");
+            return;
+        }
+        
+        var discrete = actions.DiscreteActions; // action index
 
-            if (BoardManager.Instance.Terminal(BoardManager.Instance.Board))
+        var prevNumOpponentPlayers = Env.Players.GetPlayerPositions(Env.Board.Board, opponent).Count;
+        
+        if (Env.Board.PerformAction(Env.Ai.GetAction(discrete[0])))
+        {
+            var newNumOpponentPlayers = Env.Players.GetPlayerPositions(Env.Board.Board, opponent).Count;
+            Env.Players.ChangePlayerTurn();
+
+            // If game over
+            if (Env.Board.Terminal(Env.Board.Board))
             {
-                AddReward(1);
-                OpponentAgent?.AddReward(-1);
+                SetReward(1);
+                OpponentAgent.SetReward(-1);
                 
                 EndEpisode();
-                OpponentAgent?.EndEpisode();
+                OpponentAgent.EndEpisode();
                 
-                GameManager.Instance?.Reset();
+                Env.Reset();
             }
+            else
+            {
+                if (newNumOpponentPlayers < prevNumOpponentPlayers)
+                {
+                    var reward = 1f / Env.Board.BoardSize;
+                    AddReward(reward);
+                    OpponentAgent.AddReward(-reward);
+                }
+            }
+        }
+        else
+        {
+            Debug.LogError("Ai performed invalid move!");
         }
     }
 
     public override void WriteDiscreteActionMask(IDiscreteActionMask actionMask)
     {
-        var actionMasks = AiManager.Instance.GetActionMasks(); // Action index = valid
-        var boardSize = BoardManager.Instance.BoardSize;
+        var actionMasks = Env.Ai.GetActionMasks(); // Action index = valid
+        var boardSize = Env.Board.BoardSize;
         var cellCount = boardSize * boardSize;
         for (int actionIndex = 0; actionIndex < cellCount * 16; actionIndex++)
         {

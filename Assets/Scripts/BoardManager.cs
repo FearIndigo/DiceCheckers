@@ -7,7 +7,7 @@ using UnityEngine.Tilemaps;
 
 public class BoardManager : MonoBehaviour
 {
-    public static BoardManager Instance;
+    public Environment Env;
     
     [SerializeField] private Tilemap _playerTilemap;
     [SerializeField] private Tilemap _actionsTilemap;
@@ -17,27 +17,6 @@ public class BoardManager : MonoBehaviour
     public int BoardSize => _boardSize;
     private Dictionary<Vector3Int, int> _board;
     public Dictionary<Vector3Int, int> Board => _board;
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else if (Instance != this)
-        {
-            Destroy(this);
-        }
-    }
-    
-    private void OnDestroy()
-    {
-        if (Instance == this)
-        {
-            Instance = null;
-        }
-    }
 
     public void Reset()
     {
@@ -79,14 +58,14 @@ public class BoardManager : MonoBehaviour
         }
         
         // Check it is this players turn
-        if (!PlayerManager.Instance.IsPlayersTurn(_board, action.From))
+        if (!Env.Players.IsPlayersTurn(_board, action.From))
         {
             Debug.LogError("Can only perform action on own player.");
             return false;
         }
         
         // Move player on board
-        _board = Result(_board, action, PlayerManager.Instance.PlayerATurn ? 0 : 1);
+        _board = Result(_board, action, Env.Players.PlayerATurn ? 0 : 1);
         
         // Update board visuals
         UpdatePlayerTiles();
@@ -94,7 +73,7 @@ public class BoardManager : MonoBehaviour
         // Check if terminal board
         if (Terminal(_board))
         {
-            GameManager.Instance.GameWinner(PlayerManager.Instance.GetOwner(_board, action.To));
+            Env.Game.GameWinner(Env.Players.GetOwner(_board, action.To));
         }
 
         return true;
@@ -110,7 +89,7 @@ public class BoardManager : MonoBehaviour
         }
         
         // Check it is this players turn
-        if (PlayerManager.Instance.GetOwner(board, action.From) != owner)
+        if (Env.Players.GetOwner(board, action.From) != owner)
         {
             Debug.LogError("Can only perform action on own player.");
             return board;
@@ -120,12 +99,12 @@ public class BoardManager : MonoBehaviour
         var newBoard = new Dictionary<Vector3Int, int>(board);
 
         // If owner A upgrading to super player
-        if(PlayerManager.Instance.GetOwner(board, action.From) == 0 && action.To.y == _boardSize - 1)
+        if(Env.Players.GetOwner(board, action.From) == 0 && action.To.y == _boardSize - 1)
         {
             newBoard[action.To] = 3;
         }
         // If owner B upgrading to super player
-        else if (PlayerManager.Instance.GetOwner(board, action.From) == 1 && action.To.y == 0)
+        else if (Env.Players.GetOwner(board, action.From) == 1 && action.To.y == 0)
         {
             newBoard[action.To] = 4;
         }
@@ -156,7 +135,7 @@ public class BoardManager : MonoBehaviour
     {
         for (int i = 0; i < 2; i++)
         {
-            var players = PlayerManager.Instance.GetPlayerPositions(board, i);
+            var players = Env.Players.GetPlayerPositions(board, i);
             if (players.Count == 0)
             {
                 return true;
@@ -182,7 +161,7 @@ public class BoardManager : MonoBehaviour
             {
                 changeTiles.Add(new TileChangeData(
                     GetBoardPos(keyVal.Key), 
-                    PlayerManager.Instance.GetPlayerTile(keyVal.Value),
+                    Env.Players.GetPlayerTile(keyVal.Value),
                     Color.white,
                     Matrix4x4.identity
                     ));
@@ -195,7 +174,7 @@ public class BoardManager : MonoBehaviour
 
     public void UpdateActionsTiles(Vector3Int pos)
     {
-        var actions = PlayerManager.Instance.GetActions(_board, pos);
+        var actions = Env.Players.GetActions(_board, pos);
         
         // Clear all tiles
         _actionsTilemap.ClearAllTiles();
@@ -204,7 +183,7 @@ public class BoardManager : MonoBehaviour
         List<TileChangeData> changeTiles = new List<TileChangeData>();
         
         // Get owner
-        var owner = PlayerManager.Instance.GetOwner(_board, pos);
+        var owner = Env.Players.GetOwner(_board, pos);
         
         // Loop actions
         foreach (var action in actions)
@@ -212,7 +191,7 @@ public class BoardManager : MonoBehaviour
             // White if empty, red if oposing player
             var color = _board.TryGetValue(action.To, out int to) && to == 0 ?
                 Color.white :
-                PlayerManager.Instance.GetOwner(_board, action.To) != owner ?
+                Env.Players.GetOwner(_board, action.To) != owner ?
                     Color.red : 
                     Color.white;
             changeTiles.Add(new TileChangeData(
