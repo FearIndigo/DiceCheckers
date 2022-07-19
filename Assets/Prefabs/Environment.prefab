@@ -1837,7 +1837,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 39b1ea52c924dfc43aeda761e0b733c3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _maxSteps: 500
+  _maxSteps: 250
   Ai: {fileID: 6322285592586424136}
   Board: {fileID: 426046440}
   Dice: {fileID: 426046441}
