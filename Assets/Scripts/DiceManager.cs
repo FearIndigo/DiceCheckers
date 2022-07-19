@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Design.Serialization;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using Random = UnityEngine.Random;
@@ -89,14 +90,7 @@ public class DiceManager : MonoBehaviour
 
         // Setup super move
         SuperMove = new List<Vector3Int>();
-        SuperMove.Add(new Vector3Int(0, 1));
-        SuperMove.Add(new Vector3Int(0, -1));
-        SuperMove.Add(new Vector3Int(-1, 0));
-        SuperMove.Add(new Vector3Int(1, 0));
-        SuperMove.Add(new Vector3Int(-1, 1));
-        SuperMove.Add(new Vector3Int(1, -1));
-        SuperMove.Add(new Vector3Int(1, 1));
-        SuperMove.Add(new Vector3Int(-1, -1));
+        SuperMove = SuperMove.Union(_allMoves[6]).ToList();
     }
     
     public void UpdateMove()
