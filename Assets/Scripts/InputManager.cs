@@ -28,8 +28,8 @@ public class InputManager : MonoBehaviour
 
     private void FixedUpdate()
     {
-        // Let AI make their turn
-        if (Env.Players.IsAiTurn)
+        // Let AI make their turn, if the game isn't over
+        if (Env.Players.IsAiTurn && !Env.Board.Terminal(Env.Board.Board))
         {
             Env.Ai.InferAction();
             return;
