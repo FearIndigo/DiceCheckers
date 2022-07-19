@@ -41,12 +41,9 @@ public class AiAgent : Agent
         }
         
         var discrete = actions.DiscreteActions; // action index
-
-        var prevNumOpponentPlayers = Env.Players.GetPlayerPositions(Env.Board.Board, opponent).Count;
         
         if (Env.Board.PerformAction(Env.Ai.GetAction(discrete[0])))
         {
-            var newNumOpponentPlayers = Env.Players.GetPlayerPositions(Env.Board.Board, opponent).Count;
             Env.Players.ChangePlayerTurn();
 
             // If game over
@@ -59,15 +56,6 @@ public class AiAgent : Agent
                 OpponentAgent.EndEpisode();
                 
                 Env.Reset();
-            }
-            else
-            {
-                if (newNumOpponentPlayers < prevNumOpponentPlayers)
-                {
-                    var reward = 1f / Env.Board.BoardSize;
-                    AddReward(reward);
-                    OpponentAgent.AddReward(-reward);
-                }
             }
         }
         else

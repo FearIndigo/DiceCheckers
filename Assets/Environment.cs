@@ -28,6 +28,7 @@ public class Environment : MonoBehaviour
         if (_steps == _maxSteps)
         {
             Ai.Interrupted();
+            Debug.Log("Episode interrupted!");
         }
     }
 }
