@@ -144,10 +144,10 @@ public class PlayerManager : MonoBehaviour
             return actions;
         }
 
-        var currentMove = player > 2 ? Env.Dice.SuperMove.Union(Env.Dice.CurrentMove).ToList() : Env.Dice.CurrentMove;
+        var allPlayerMoves = player > 2 ? Env.Dice.KingCurrentMove.Union(Env.Dice.CurrentMove).ToList() : Env.Dice.CurrentMove;
 
         // Loop all possible moves
-        foreach (var move in currentMove)
+        foreach (var move in allPlayerMoves)
         {
             var to = playerPos + move;
             // Check To position is valid and doesnt have player on the same team
@@ -158,7 +158,7 @@ public class PlayerManager : MonoBehaviour
             }
         }
 
-        // Return possible actions
+        // Return valid player actions
         return actions;
     }
     

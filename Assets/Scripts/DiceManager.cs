@@ -12,20 +12,14 @@ public class DiceManager : MonoBehaviour
     public Environment Env;
 
     [SerializeField] private SpriteRenderer _renderer;
+    [SerializeField] private SpriteRenderer _kingRenderer;
     [SerializeField] private Sprite[] _moveSprites;
     [SerializeField] private Color[] _colours;
     private List<Vector3Int>[] _allMoves;
-    private List<Vector3Int> _currentMove;
     private int _index;
-    public int Index => _index;
-    public int NumMoves => _allMoves?.Length ?? 0;
-    public List<Vector3Int> CurrentMove => _currentMove;
-
-    public List<Vector3Int> SuperMove
-    {
-        get;
-        private set;
-    }
+    private int _kingIndex;
+    public List<Vector3Int> CurrentMove => _allMoves[_index];
+    public List<Vector3Int> KingCurrentMove => _allMoves[_kingIndex];
 
     public void Reset()
     {
@@ -88,10 +82,6 @@ public class DiceManager : MonoBehaviour
             // Add moves to all moves
             _allMoves[i] = moves;
         }
-
-        // Setup super move
-        SuperMove = new List<Vector3Int>();
-        SuperMove = SuperMove.Union(_allMoves[6]).ToList();
     }
     
     public void UpdateMove()
@@ -105,16 +95,15 @@ public class DiceManager : MonoBehaviour
         }
 
         var owner = Env.Players.PlayerATurn ? 0 : 1;
-        var index = 0;
+        _renderer.color = _colours[owner];
+        // Update Normal piece move
         var validMove = false;
+        var validKing = false;
         while (!validMove)
         {
             // Get random index
-            index = Random.Range(0, _allMoves.Length);
-        
-            // Set new move
-            _currentMove = _allMoves[index];
-            
+            _index = Random.Range(0, _allMoves.Length);
+
             // Check there are valid moves for owner player
             // Get players for owner
             var playerPositions = Env.Players.GetPlayerPositions(board, owner);
@@ -127,15 +116,17 @@ public class DiceManager : MonoBehaviour
                 {
                     // There are valid moves for this player
                     validMove = true;
+
+                    // Get random king index
+                    _kingIndex = Random.Range(0, _allMoves.Length);
+
                     break;
                 }
             }
         }
 
         // Update sprite
-        _renderer.sprite = _moveSprites[index];
-        _renderer.color = _colours[owner];
-
-        _index = index;
+        _renderer.sprite = _moveSprites[_index];
+        _kingRenderer.sprite = _moveSprites[_kingIndex];
     }
 }
