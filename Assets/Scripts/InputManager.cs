@@ -14,6 +14,7 @@ public class InputManager : MonoBehaviour
     private Vector3Int _selected;
     private Vector3Int _unselectedVal = new Vector3Int(-1, -1);
     private Camera _mainCam;
+    private bool _aiDeciding;
 
     private void Awake()
     {
@@ -24,6 +25,16 @@ public class InputManager : MonoBehaviour
     {
         // Change selected and update available moves visuals
         UpdateSelected(_unselectedVal);
+        StopAllCoroutines();
+        _aiDeciding = false;
+    }
+
+    private IEnumerator AiMoveDelayed()
+    {
+        _aiDeciding = true;
+        yield return new WaitForSeconds(0.5f);
+        Env.Ai.InferAction();
+        _aiDeciding = false;
     }
 
     private void FixedUpdate()
@@ -31,7 +42,16 @@ public class InputManager : MonoBehaviour
         // Let AI make their turn, if the game isn't over
         if (Env.Players.IsAiTurn && !Env.Board.Terminal(Env.Board.Board))
         {
-            Env.Ai.InferAction();
+            if (Env.Training)
+            {
+                Env.Ai.InferAction();
+            }
+            else if (!_aiDeciding)
+            {
+                StopAllCoroutines();
+                StartCoroutine(nameof(AiMoveDelayed));
+            }
+            
             return;
         }
     }

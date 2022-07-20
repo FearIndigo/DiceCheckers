@@ -1838,6 +1838,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _maxSteps: 500
+  _training: 0
   Ai: {fileID: 6322285592586424136}
   Board: {fileID: 426046440}
   Dice: {fileID: 426046441}
@@ -5869,7 +5870,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 1
   m_Sprite: {fileID: 7482667652216324306, guid: db750325989564987a34393247d883b4, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.43921572, g: 0.7686275, b: 0.6666667, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -6244,6 +6245,9 @@ MonoBehaviour:
   - {fileID: -172381266, guid: 3c736e606655a3348b615dc481c7b129, type: 3}
   - {fileID: 1445585466, guid: 3c736e606655a3348b615dc481c7b129, type: 3}
   - {fileID: 404729629, guid: 3c736e606655a3348b615dc481c7b129, type: 3}
+  _colours:
+  - {r: 0.43921572, g: 0.7686275, b: 0.6666667, a: 1}
+  - {r: 0.9490197, g: 0.6156863, b: 0.72156864, a: 1}
 --- !u!114 &426046442
 MonoBehaviour:
   m_ObjectHideFlags: 0

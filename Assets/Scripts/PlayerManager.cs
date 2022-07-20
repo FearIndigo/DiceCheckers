@@ -88,7 +88,7 @@ public class PlayerManager : MonoBehaviour
         // Swap the active player
         _playerATurn = !_playerATurn;
         
-        if (HasAI && _playerATurn)
+        if (Env.Training && HasAI && _playerATurn)
         {
             Env.UpdateSteps();
         }

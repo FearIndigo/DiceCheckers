@@ -12,7 +12,6 @@ public class AiManager : MonoBehaviour
     public Environment Env;
 
     [SerializeField] private List<AiAgent> _aiAgents;
-    [SerializeField] private GameObject _aiAgentPrefab;
     private Dictionary<Vector3Int,int> _moveMap = new Dictionary<Vector3Int, int>
     {
         [new Vector3Int(0, 1)] = 0,

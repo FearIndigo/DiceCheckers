@@ -13,6 +13,7 @@ public class DiceManager : MonoBehaviour
 
     [SerializeField] private SpriteRenderer _renderer;
     [SerializeField] private Sprite[] _moveSprites;
+    [SerializeField] private Color[] _colours;
     private List<Vector3Int>[] _allMoves;
     private List<Vector3Int> _currentMove;
     private int _index;
@@ -102,42 +103,38 @@ public class DiceManager : MonoBehaviour
         {
             return;
         }
-        
+
+        var owner = Env.Players.PlayerATurn ? 0 : 1;
         var index = 0;
-        var validMoves = new bool[2];
-        while (!validMoves[0] || !validMoves[1])
+        var validMove = false;
+        while (!validMove)
         {
-            validMoves[0] = false;
-            validMoves[1] = false;
-            
             // Get random index
             index = Random.Range(0, _allMoves.Length);
         
             // Set new move
             _currentMove = _allMoves[index];
             
-            // Check there are valid moves for both players
-            for (int i = 0; i < 2; i++)
+            // Check there are valid moves for owner player
+            // Get players for owner
+            var playerPositions = Env.Players.GetPlayerPositions(board, owner);
+            
+            // Loop players for owner
+            foreach (var playerPos in playerPositions)
             {
-                // Get players for owner
-                var playerPositions = Env.Players.GetPlayerPositions(board, i);
-                
-                // Loop players for owner
-                foreach (var playerPos in playerPositions)
+                // Check there are valid actions for this player
+                if (Env.Players.GetActions(board, playerPos).Count != 0)
                 {
-                    // Check there are valid actions for this player
-                    if (Env.Players.GetActions(board, playerPos).Count != 0)
-                    {
-                        // There are valid moves for this player
-                        validMoves[i] = true;
-                        break;
-                    }
+                    // There are valid moves for this player
+                    validMove = true;
+                    break;
                 }
             }
         }
 
         // Update sprite
         _renderer.sprite = _moveSprites[index];
+        _renderer.color = _colours[owner];
 
         _index = index;
     }

@@ -8,6 +8,9 @@ public class Environment : MonoBehaviour
     [SerializeField] private int _maxSteps;
     private int _steps;
 
+    [SerializeField] private bool _training;
+    public bool Training => _training;
+    
     public AiManager Ai;
     public BoardManager Board;
     public DiceManager Dice;

@@ -33,7 +33,6 @@ public class AiAgent : Agent
     {
         // Ignore if not this players turn
         var owner = Env.Players.PlayerATurn ? 0 : 1;
-        var opponent = Env.Players.PlayerATurn ? 1 : 0;
         if (_params.TeamId != owner)
         {
             Debug.Log("Ai attempting move when not it's turn");
@@ -54,8 +53,11 @@ public class AiAgent : Agent
                 
                 EndEpisode();
                 OpponentAgent.EndEpisode();
-                
-                Env.Reset();
+
+                if (Env.Training)
+                {
+                    Env.Reset();
+                }
             }
         }
         else
