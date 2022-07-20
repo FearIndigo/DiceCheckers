@@ -188,7 +188,7 @@ public class BoardManager : MonoBehaviour
         // Loop actions
         foreach (var action in actions)
         {
-            // White if empty, red if oposing player
+            // White if empty, red if opposing player
             var color = _board.TryGetValue(action.To, out int to) && to == 0 ?
                 Color.white :
                 Env.Players.GetOwner(_board, action.To) != owner ?
