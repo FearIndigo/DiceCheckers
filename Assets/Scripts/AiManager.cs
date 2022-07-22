@@ -118,36 +118,22 @@ public class AiManager : MonoBehaviour
 
     private float[] ConvertBoardToObservation(Dictionary<Vector3Int, int> board)
     {
-        var boardSize = Env.Board.BoardSize;
-        var cellCount = boardSize * boardSize;
-        var observation = new float[cellCount];
+        var numTypes = 4; // 2 different types per player
+        var observation = new float[board.Count * numTypes];
         var index = 0;
-        for (int x = 0; x < boardSize; x++)
+        for (int type = 1; type < numTypes + 1; type++)
         {
-            for (int y = 0; y < boardSize; y++)
+            foreach (var posValue in board)
             {
-                var key = new Vector3Int(x, y, 0);
-
-                float value;
-                switch (board[key])
+                if (posValue.Value == type)
                 {
-                    default:
-                        value = 0f;
-                        break;
-                    case 1:
-                        value = 0.5f;
-                        break;
-                    case 2:
-                        value = -0.5f;
-                        break;
-                    case 3:
-                        value = 1f;
-                        break;
-                    case 4:
-                        value = -1f;
-                        break;
+                    observation[index] = 1f;
                 }
-                observation[index] = value;
+                else
+                {
+                    observation[index] = 0f;
+                }
+
                 index++;
             }
         }
