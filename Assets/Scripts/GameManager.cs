@@ -34,9 +34,7 @@ public class GameManager : MonoBehaviour
     public void GameWinner(int owner)
     {
         _winnerText.text = _playerNames[owner] + " Wins!";
-        Debug.Log(_winnerText.text);
         
-        if(Env.Training)
-            Env.Ai.GameWinner(owner);
+        Debug.Log(_winnerText.text);
     }
 }

@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Design.Serialization;
-using Unity.MLAgents.Integrations.Match3;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -49,12 +48,24 @@ public class BoardManager : MonoBehaviour
         UpdatePlayerTiles();
     }
 
-    public bool PerformMove(Move move)
+    public bool PerformAction(PlayerManager.Action action)
     {
-        if (!IsValid(move)) return false;
+        // Test From has value that is a player, and To is a valid position that isn't a player on the same team
+        if (!_board.TryGetValue(action.From, out int from) || from == 0 || !_board.TryGetValue(action.To, out int to) || from == to)
+        {
+            Debug.LogError("Illegal Action: (" + action.From + ", " + action.To + ").");
+            return false;
+        }
+        
+        // Check it is this players turn
+        if (!Env.Players.IsPlayersTurn(_board, action.From))
+        {
+            Debug.LogError("Can only perform action on own player.");
+            return false;
+        }
         
         // Move player on board
-        _board = Result(_board, move);
+        _board = Result(_board, action, Env.Players.PlayerATurn ? 0 : 1);
         
         // Update board visuals
         UpdatePlayerTiles();
@@ -62,68 +73,50 @@ public class BoardManager : MonoBehaviour
         // Check if terminal board
         if (Terminal(_board))
         {
-            var owner = Env.Players.PlayerATurn ? 0 : 1;
-            Env.Game.GameWinner(owner);
-        }
-        else
-        {
-            Env.Players.ChangePlayerTurn();
+            Env.Game.GameWinner(Env.Players.GetOwner(_board, action.To));
         }
 
         return true;
     }
 
-    public Dictionary<Vector3Int, int> Result(Dictionary<Vector3Int, int> board, Move move)
+    public Dictionary<Vector3Int, int> Result(Dictionary<Vector3Int, int> board, PlayerManager.Action action, int owner)
     {
-        var fromPos = new Vector3Int(move.Column, move.Row);
-        var otherCell = move.OtherCell();
-        var toPos = new Vector3Int(otherCell.Column, otherCell.Row);
+        // Test From has value that is a player, and To is a valid position that isn't a player on the same team
+        if (!board.TryGetValue(action.From, out int from) || from == 0 || !board.TryGetValue(action.To, out int to) || from == to)
+        {
+            Debug.LogError("Illegal Action: (" + action.From + ", " + action.To + ").");
+            return board;
+        }
+        
+        // Check it is this players turn
+        if (Env.Players.GetOwner(board, action.From) != owner)
+        {
+            Debug.LogError("Can only perform action on own player.");
+            return board;
+        }
         
         // Copy board
         var newBoard = new Dictionary<Vector3Int, int>(board);
 
         // If owner A upgrading to super player
-        if(Env.Players.GetOwner(board, fromPos) == 0 && toPos.y == _boardSize - 1)
+        if(Env.Players.GetOwner(board, action.From) == 0 && action.To.y == _boardSize - 1)
         {
-            newBoard[toPos] = 3;
+            newBoard[action.To] = 3;
         }
         // If owner B upgrading to super player
-        else if (Env.Players.GetOwner(board, fromPos) == 1 && toPos.y == 0)
+        else if (Env.Players.GetOwner(board, action.From) == 1 && action.To.y == 0)
         {
-            newBoard[toPos] = 4;
+            newBoard[action.To] = 4;
         }
         // Move player
         else
         {
-            newBoard[toPos] = board[fromPos];
+            newBoard[action.To] = from;
         }
-        newBoard[fromPos] = 0;
+        newBoard[action.From] = 0;
         
         // Return resulting board
         return newBoard;
-    }
-
-    public bool IsValid(Move move)
-    {
-        var fromPos = new Vector3Int(move.Column, move.Row);
-        var otherCell = move.OtherCell();
-        var toPos = new Vector3Int(otherCell.Column, otherCell.Row);
-        var owner = Env.Players.GetOwner(_board, fromPos);
-        // Test owner exists for fromPos and toPos is valid and doesnt have same owner
-        if (owner == -1 || !_board.ContainsKey(toPos) || owner == Env.Players.GetOwner(_board, toPos))
-        {
-            Debug.LogError("Illegal Action: (" + fromPos + ", " + toPos + ").");
-            return false;
-        }
-        
-        // Check it is this players turn
-        if (!Env.Players.IsPlayersTurn(_board, fromPos))
-        {
-            Debug.LogError("Can only perform action on own player.");
-            return false;
-        }
-
-        return true;
     }
 
     public Vector3Int GetBoardPos(Vector3 position, bool local = true)
@@ -181,7 +174,7 @@ public class BoardManager : MonoBehaviour
 
     public void UpdateActionsTiles(Vector3Int pos)
     {
-        var moves = Env.Players.GetMoves(_board, pos);
+        var actions = Env.Players.GetActions(_board, pos);
         
         // Clear all tiles
         _actionsTilemap.ClearAllTiles();
@@ -193,18 +186,16 @@ public class BoardManager : MonoBehaviour
         var owner = Env.Players.GetOwner(_board, pos);
         
         // Loop actions
-        foreach (var move in moves)
+        foreach (var action in actions)
         {
-            var otherCell = move.OtherCell();
-            var toPos = new Vector3Int(otherCell.Column, otherCell.Row);
             // White if empty, red if opposing player
-            var color = _board.TryGetValue(toPos, out int to) && to == 0 ?
+            var color = _board.TryGetValue(action.To, out int to) && to == 0 ?
                 Color.white :
-                Env.Players.GetOwner(_board, toPos) != owner ?
+                Env.Players.GetOwner(_board, action.To) != owner ?
                     Color.red : 
                     Color.white;
             changeTiles.Add(new TileChangeData(
-                (GetBoardPos(toPos)), 
+                (GetBoardPos(action.To)), 
                 _actionTile,
                 color,
                 Matrix4x4.identity

@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Design.Serialization;
 using System.Linq;
-using Unity.MLAgents.Integrations.Match3;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using Random = UnityEngine.Random;
@@ -16,12 +15,11 @@ public class DiceManager : MonoBehaviour
     [SerializeField] private SpriteRenderer _kingRenderer;
     [SerializeField] private Sprite[] _moveSprites;
     [SerializeField] private Color[] _colours;
-    private List<Direction>[] _diceDirections;
-    [SerializeField] private int _index;
-
-    [SerializeField] private int _kingIndex;
-    public List<Direction> CurrentDirections => _diceDirections[_index];
-    public List<Direction> KingCurrentDirections => _diceDirections[_kingIndex];
+    private List<Vector3Int>[] _allMoves;
+    private int _index;
+    private int _kingIndex;
+    public List<Vector3Int> CurrentMove => _allMoves[_index];
+    public List<Vector3Int> KingCurrentMove => _allMoves[_kingIndex];
 
     public void Reset()
     {
@@ -34,37 +32,55 @@ public class DiceManager : MonoBehaviour
 
     void SetupAllMoves()
     {
-        _diceDirections = new List<Direction>[6];
+        _allMoves = new List<Vector3Int>[7];
         
-        for (int i = 0; i < _diceDirections.Length; i++)
+        for (int i = 0; i < _allMoves.Length; i++)
         {
-            var directions = new List<Direction>();
+            var moves = new List<Vector3Int>();
             switch (i)
             {
                 case 0:
-                    directions.Add(Direction.Up);
+                    moves.Add(new Vector3Int(0, 1));
+                    moves.Add(new Vector3Int(0, -1));
                     break;
                 case 1:
-                    directions.Add(Direction.Down);
+                    moves.Add(new Vector3Int(-1, 0));
+                    moves.Add(new Vector3Int(1, 0));
                     break;
                 case 2:
-                    directions.Add(Direction.Left);
+                    moves.Add(new Vector3Int(0, 1));
+                    moves.Add(new Vector3Int(0, -1));
+                    moves.Add(new Vector3Int(-1, 0));
+                    moves.Add(new Vector3Int(1, 0));
                     break;
                 case 3:
-                    directions.Add(Direction.Right);
+                    moves.Add(new Vector3Int(-1, 1));
+                    moves.Add(new Vector3Int(1, -1));
                     break;
                 case 4:
-                    directions.Add(Direction.Up);
-                    directions.Add(Direction.Down);
+                    moves.Add(new Vector3Int(1, 1));
+                    moves.Add(new Vector3Int(-1, -1));
                     break;
                 case 5:
-                    directions.Add(Direction.Left);
-                    directions.Add(Direction.Right);
+                    moves.Add(new Vector3Int(-1, 1));
+                    moves.Add(new Vector3Int(1, -1));
+                    moves.Add(new Vector3Int(1, 1));
+                    moves.Add(new Vector3Int(-1, -1));
+                    break;
+                case 6:
+                    moves.Add(new Vector3Int(-1, 2));
+                    moves.Add(new Vector3Int(-1, -2));
+                    moves.Add(new Vector3Int(-2, 1));
+                    moves.Add(new Vector3Int(-2, -1));
+                    moves.Add(new Vector3Int(1, 2));
+                    moves.Add(new Vector3Int(1, -2));
+                    moves.Add(new Vector3Int(2, 1));
+                    moves.Add(new Vector3Int(2, -1));
                     break;
             }
             
-            // Add directions to dice directions
-            _diceDirections[i] = directions;
+            // Add moves to all moves
+            _allMoves[i] = moves;
         }
     }
     
@@ -80,24 +96,15 @@ public class DiceManager : MonoBehaviour
 
         var owner = Env.Players.PlayerATurn ? 0 : 1;
         _renderer.color = _colours[owner];
-
+        // Get random king index
+        _kingIndex = Random.Range(0, _allMoves.Length);
+        
         // Update Normal piece move
         var validMove = false;
         while (!validMove)
         {
             // Get random index
-            _index = Random.Range(0, _diceDirections.Length);
-            
-            // Get random king index, excluding selected normal index
-            var otherIndexes = new int[_diceDirections.Length - 1];
-            var index = -1;
-            for (int i = 0; i < _diceDirections.Length; i++)
-            {
-                if (i == _index) continue;
-                index++;
-                otherIndexes[index] = i;
-            }
-            _kingIndex = otherIndexes[Random.Range(0, otherIndexes.Length)];
+            _index = Random.Range(0, _allMoves.Length);
 
             // Check there are valid moves for owner player
             // Get players for owner
@@ -107,7 +114,7 @@ public class DiceManager : MonoBehaviour
             foreach (var playerPos in playerPositions)
             {
                 // Check there are valid actions for this player
-                if (Env.Players.GetMoves(board, playerPos).Count != 0)
+                if (Env.Players.GetActions(board, playerPos).Count != 0)
                 {
                     // There are valid moves for this player
                     validMove = true;
