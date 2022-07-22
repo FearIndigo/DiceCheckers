@@ -96,9 +96,7 @@ public class DiceManager : MonoBehaviour
 
         var owner = Env.Players.PlayerATurn ? 0 : 1;
         _renderer.color = _colours[owner];
-        // Get random king index
-        _kingIndex = Random.Range(0, _allMoves.Length);
-        
+
         // Update Normal piece move
         var validMove = false;
         while (!validMove)
@@ -106,6 +104,17 @@ public class DiceManager : MonoBehaviour
             // Get random index
             _index = Random.Range(0, _allMoves.Length);
 
+            // Get random king index, excluding selected normal index
+            var otherIndexes = new int[_allMoves.Length - 1];
+            var index = -1;
+            for (int i = 0; i < _allMoves.Length; i++)
+            {
+                if (i == _index) continue;
+                index++;
+                otherIndexes[index] = i;
+            }
+            _kingIndex = otherIndexes[Random.Range(0, otherIndexes.Length)];
+            
             // Check there are valid moves for owner player
             // Get players for owner
             var playerPositions = Env.Players.GetPlayerPositions(board, owner);
