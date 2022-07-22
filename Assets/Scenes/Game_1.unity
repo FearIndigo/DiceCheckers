@@ -377,6 +377,10 @@ PrefabInstance:
       propertyPath: _playerAAi
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6322285592586424137, guid: fb3a6038e35c94b4887b690a234d53ae, type: 3}
+      propertyPath: _playerBAi
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7926436243952106741, guid: fb3a6038e35c94b4887b690a234d53ae, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0

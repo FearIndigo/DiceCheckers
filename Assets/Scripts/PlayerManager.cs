@@ -4,42 +4,13 @@ using System.Collections.Generic;
 using System.ComponentModel.Design.Serialization;
 using System.Linq;
 using System.Runtime.Serialization;
+using Unity.MLAgents.Integrations.Match3;
 using UnityEngine;
 using UnityEngine.PlayerLoop;
 using UnityEngine.Tilemaps;
 
 public class PlayerManager : MonoBehaviour
 {
-    [System.Serializable]
-    public struct Action : IEquatable<Action>
-    {
-        public Action(Vector3Int from, Vector3Int to)
-        {
-            this.From = from;
-            this.To = to;
-        }
-        public Vector3Int From;
-        public Vector3Int To;
-
-        public bool Equals(Action other)
-        {
-            return From.Equals(other.From) && To.Equals(other.To);
-        }
-
-        public override bool Equals(object obj)
-        {
-            return obj is Action other && Equals(other);
-        }
-
-        public override int GetHashCode()
-        {
-            int res = 0x2D2816FE;
-            res = res * 31 + From.GetHashCode();
-            res = res * 31 + To.GetHashCode();
-            return res;
-        }
-    }
-
     public Environment Env;
 
     [SerializeField] private DictionaryIntInt _playerTileMap;
@@ -58,24 +29,6 @@ public class PlayerManager : MonoBehaviour
     public void Reset()
     {
         _playerATurn = true;
-    }
-
-    public void Set2PlayerMode()
-    {
-        _playerAAi = false;
-        _playerBAi = false;
-    }
-
-    public void Set1PlayerMode()
-    {
-        _playerAAi = false;
-        _playerBAi = true;
-    }
-
-    public void Set0PlayerMode()
-    {
-        _playerAAi = true;
-        _playerBAi = true;
     }
 
     public TileBase GetPlayerTile(int playerValue)
@@ -133,51 +86,37 @@ public class PlayerManager : MonoBehaviour
         return GetOwner(board, playerPos) == (_playerATurn ? 0 : 1);
     }
     
-    public List<Action> GetActions(Dictionary<Vector3Int, int> board, Vector3Int playerPos)
+    public List<Move> GetMoves(Dictionary<Vector3Int, int> board, Vector3Int playerPos)
     {
-        var actions = new List<Action>();
+        var validMoves = new List<Move>();
 
         // Check position is valid and has a player
         if (!board.TryGetValue(playerPos, out int player) || player == 0)
         {
             Debug.LogWarning("Cannot get action for: (" + playerPos + ").");
-            return actions;
+            return validMoves;
         }
 
-        var allPlayerMoves = player > 2 ? Env.Dice.KingCurrentMove.Union(Env.Dice.CurrentMove).ToList() : Env.Dice.CurrentMove;
+        var directions = player > 2 ?
+            Env.Dice.KingCurrentDirections.Union(Env.Dice.CurrentDirections).ToList() :
+            Env.Dice.CurrentDirections;
 
         // Loop all possible moves
-        foreach (var move in allPlayerMoves)
+        foreach (var direction in directions)
         {
-            var to = playerPos + move;
-            // Check To position is valid and doesnt have player on the same team
-            if (board.TryGetValue(to, out int toVal) && (toVal == 0 || _playerOwnershipMap[toVal] != _playerOwnershipMap[player]))
+            var newMove = new Move
             {
-                // Add to potential actions
-                actions.Add(new Action(playerPos, to));
+                Column = playerPos.x,
+                Row = playerPos.y,
+                Direction = direction
+            };
+            if (Env.Board.IsValid(newMove))
+            {
+                validMoves.Add(newMove);
             }
         }
 
-        // Return valid player actions
-        return actions;
-    }
-    
-    public List<Action> GetAllPlayerActions(Dictionary<Vector3Int, int> board, int owner)
-    {
-        var allActions = new List<Action>();
-        
-        var playerPositions = GetPlayerPositions(board, owner);
-
-        // Loop all player positions
-        foreach (var playerPos in playerPositions)
-        {
-            var actions = GetActions(board, playerPos);
-            if (actions.Count != 0)
-            {
-                allActions.AddRange(actions);
-            }
-        }
-
-        return allActions;
+        // Return valid player moves
+        return validMoves;
     }
 }

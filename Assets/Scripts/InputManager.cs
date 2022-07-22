@@ -2,7 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Design.Serialization;
+using System.Linq;
 using Unity.MLAgents;
+using Unity.MLAgents.Integrations.Match3;
 using UnityEngine;
 using UnityEngine.PlayerLoop;
 using UnityEngine.Tilemaps;
@@ -93,7 +95,7 @@ public class InputManager : MonoBehaviour
                 }
                 
                 // Check there are available actions for this player
-                if (Env.Players.GetActions(board, pos).Count == 0)
+                if (Env.Players.GetMoves(board, pos).Count == 0)
                 {
                     Debug.LogWarning("Cannot select player with no available actions.");
                     return;
@@ -104,22 +106,26 @@ public class InputManager : MonoBehaviour
             }
             else
             {
-                // Get available actions
-                var actions = Env.Players.GetActions(board, _selected);
-                
                 // Check if we should change selected player
-                if (boardValue != 0 && Env.Players.IsPlayersTurn(board, pos) && Env.Players.GetActions(board, pos).Count != 0)
+                if (boardValue != 0 && Env.Players.IsPlayersTurn(board, pos) && Env.Players.GetMoves(board, pos).Count != 0)
                 {
                     // Update selected player
                     UpdateSelected(pos);
                     return;
                 }
                 
-                // Get action
-                var action = new PlayerManager.Action(_selected, pos);
+                // Get available moves
+                var validMoves = Env.Players.GetMoves(board, _selected);
+                
+                // Get move index
+                var moveIndex = validMoves.FindIndex(m =>
+                {
+                    var otherCell = m.OtherCell();
+                    return otherCell.Column == pos.x && otherCell.Row == pos.y;
+                });
 
                 // Unselect player if action is not part of available actions
-                if (!actions.Contains(action))
+                if (moveIndex == -1)
                 {
                     // Unselect player
                     UpdateSelected(_unselectedVal);
@@ -127,7 +133,7 @@ public class InputManager : MonoBehaviour
                 }
                 
                 // Perform action on board
-                if (Env.Board.PerformAction(action))
+                if (Env.Board.PerformMove(validMoves[moveIndex]))
                 {
                     // Unselect player
                     UpdateSelected(_unselectedVal);
